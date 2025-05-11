@@ -104,12 +104,23 @@ module.exports = {
 
       // 4) 텍스트 및 이미지 준비
       const cardImage = 'https://harmari.duckdns.org/static/ranking_card.png';
-      const name = data.character_name || '알 수 없음';
-      const serverName = data.server_name || '알 수 없음';
-      const className = data.class_name || '알 수 없음';
-      const rank = data.rank_position || '알 수 없음';
-      const power = data.power_value || '알 수 없음';
-      const change = parseInt(data.change_amount || 0, 10);
+      
+      // 캐릭터 정보 추출 및 키 매핑 (두 가지 종류의 키 고려)
+      const name = data.character_name || data.character || '알 수 없음';
+      const serverName = data.server_name || data.server || '알 수 없음';
+      const className = data.class_name || data.class || '알 수 없음';
+      const rank = data.rank_position || data.rank || '알 수 없음';
+      const power = data.power_value || data.power || '알 수 없음';
+      
+      // Ensure change_amount is treated as int for logic, API might return string or int
+      const rawChange = data.change_amount || data.change || 0;
+      let change;
+      try {
+        change = parseInt(rawChange, 10);
+      } catch (e) {
+        change = 0;
+      }
+      
       const changeType = data.change_type || 'none';
       // 변화량이 0이면 '-', up이면 파란색 위쁘화살표, down이면 빨간색 아래화살표
       const emoji = change === 0 ? '-' : 
