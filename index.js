@@ -20,6 +20,16 @@ client.commands = new Collection();
 client.on(Events.ClientReady, () => {
   console.log(`${client.user.tag} 봇이 준비되었습니다! (${new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })})`);
   console.log(`서버 수: ${client.guilds.cache.size}`);
+  
+  // 등록된 명령어 목록 출력
+  console.log('\n=== 등록된 명령어 목록 ===');
+  let commandList = [];
+  client.commands.forEach((command) => {
+    commandList.push(`/${command.data.name}`);
+  });
+  commandList.sort(); // 알파벳 순 정렬
+  console.log(commandList.join(', '));
+  console.log('======================\n');
 });
 
 // 이벤트 핸들러 로드
