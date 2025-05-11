@@ -27,7 +27,7 @@ module.exports = {
 
       // API에서 인구 데이터 조회
       const response = await axios.get('https://thorough-possibly-zebra.ngrok-free.app/population', {
-        timeout: 30000
+        timeout: 60000
       });
 
       if (!response.data.success) {
