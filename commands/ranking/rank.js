@@ -141,11 +141,11 @@ module.exports = {
             // API 응답 로깅
             logger.info(`API 응답: ${JSON.stringify(res.data)}`);
             
-            // API에서 응답을 받아 파싱 (새로운 형식 - 2025.05.12 기준)
+            // API에서 응답을 받아 파싱 (2025.05.12 기준 최신 형식)
             const apiData = res.data.character;
             const rankings = apiData.rankings || {};
             
-            // 랜킹 데이터 추출 (새로운 형식에 맞게 처리)
+            // 랜킹 데이터 추출
             const combatData = rankings["전투력"] || {};
             const charmData = rankings["매력"] || {};
             const lifeData = rankings["생활력"] || {};
@@ -155,11 +155,12 @@ module.exports = {
             logger.info(`매력 데이터: ${JSON.stringify(charmData)}`);
             logger.info(`생활력 데이터: ${JSON.stringify(lifeData)}`);
             
-            // 기본적으로 전투력 랜킹 데이터를 사용
+            // 전체 데이터 구성 (현재 API 형식에 맞추어 정확히 파싱)
             data = {
-              character_name: apiData.character || combatData.character,
-              server_name: apiData.server || combatData.server,
-              class_name: combatData.class,
+              // 기본 캐릭터 정보
+              character_name: apiData.character,
+              server_name: apiData.server,
+              class_name: combatData.class,  // 기본적으로 전투력 탭의 클래스 사용
               
               // 전투력 데이터 처리
               combat_rank: combatData.rank,
@@ -179,7 +180,7 @@ module.exports = {
               life_change: lifeData.change,
               life_change_type: lifeData.change_type,
               
-              // 기존 형태와의 호환을 위해 추가
+              // 기존 필드와 호환 유지
               rank_position: combatData.rank,
               power_value: combatData.power,
               change_amount: combatData.change,
@@ -211,12 +212,17 @@ module.exports = {
       const className = data.class_name || data.class || '알 수 없음';
       
       // 전투력 랭킹 데이터 처리
-      const combatRank = data.rank_position || (data.combat_rank ? data.combat_rank + '위' : '알 수 없음');
-      const combatPower = data.power_value || (data.combat_power ? Number(data.combat_power).toLocaleString('ko-KR') : '알 수 없음');
+      const combatRank = data.rank_position || data.combat_rank || '알 수 없음';
+      const combatPower = data.power_value || data.combat_power || '알 수 없음';
       const combatRawChange = data.combat_change || data.change_amount || 0;
       let combatChange;
       try {
-        combatChange = parseInt(combatRawChange, 10);
+        // 콤마가 포함된 문자열이면 포맷팅을 제거한 후 변환
+        if (typeof combatRawChange === 'string' && combatRawChange.includes(',')) {
+          combatChange = parseInt(combatRawChange.replace(/,/g, ''), 10);
+        } else {
+          combatChange = parseInt(combatRawChange, 10);
+        }
       } catch (e) {
         combatChange = 0;
       }
@@ -227,12 +233,17 @@ module.exports = {
         '-';
       
       // 매력 랭킹 데이터 처리
-      const charmRank = data.charm_rank_formatted || (data.charm_rank ? data.charm_rank + '위' : '알 수 없음');
-      const charmPower = data.charm_power_formatted || (data.charm_power ? Number(data.charm_power).toLocaleString('ko-KR') : '알 수 없음');
+      const charmRank = data.charm_rank_formatted || data.charm_rank || '알 수 없음';
+      const charmPower = data.charm_power_formatted || data.charm_power || '알 수 없음';
       const charmRawChange = data.charm_change || 0;
       let charmChange;
       try {
-        charmChange = parseInt(charmRawChange, 10);
+        // 콤마가 포함된 문자열이면 포맷팅을 제거한 후 변환
+        if (typeof charmRawChange === 'string' && charmRawChange.includes(',')) {
+          charmChange = parseInt(charmRawChange.replace(/,/g, ''), 10);
+        } else {
+          charmChange = parseInt(charmRawChange, 10);
+        }
       } catch (e) {
         charmChange = 0;
       }
@@ -243,12 +254,17 @@ module.exports = {
         '-';
       
       // 생활력 랭킹 데이터 처리
-      const lifeRank = data.life_rank_formatted || (data.life_rank ? data.life_rank + '위' : '알 수 없음');
-      const lifePower = data.life_power_formatted || (data.life_power ? Number(data.life_power).toLocaleString('ko-KR') : '알 수 없음');
+      const lifeRank = data.life_rank_formatted || data.life_rank || '알 수 없음';
+      const lifePower = data.life_power_formatted || data.life_power || '알 수 없음';
       const lifeRawChange = data.life_change || 0;
       let lifeChange;
       try {
-        lifeChange = parseInt(lifeRawChange, 10);
+        // 콤마가 포함된 문자열이면 포맷팅을 제거한 후 변환
+        if (typeof lifeRawChange === 'string' && lifeRawChange.includes(',')) {
+          lifeChange = parseInt(lifeRawChange.replace(/,/g, ''), 10);
+        } else {
+          lifeChange = parseInt(lifeRawChange, 10);
+        }
       } catch (e) {
         lifeChange = 0;
       }
