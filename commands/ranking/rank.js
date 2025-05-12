@@ -141,14 +141,14 @@ module.exports = {
             // API 응답 로깅
             logger.info(`API 응답: ${JSON.stringify(res.data)}`);
             
-            // API에서 응답을 받아 파싱 (새로운 형식)
+            // API에서 응답을 받아 파싱 (새로운 형식 - 2025.05.12 기준)
             const apiData = res.data.character;
             const rankings = apiData.rankings || {};
             
-            // 랜킹 데이터 추출 (기본값은 전투력 - div=1)
-            const combatData = rankings["전투력"]?.data?.[0] || {};
-            const charmData = rankings["매력"]?.data?.[0] || {};
-            const lifeData = rankings["생활력"]?.data?.[0] || {};
+            // 랜킹 데이터 추출 (새로운 형식에 맞게 처리)
+            const combatData = rankings["전투력"] || {};
+            const charmData = rankings["매력"] || {};
+            const lifeData = rankings["생활력"] || {};
             
             // 각 랜킹 데이터 로깅
             logger.info(`전투력 데이터: ${JSON.stringify(combatData)}`);
@@ -157,29 +157,32 @@ module.exports = {
             
             // 기본적으로 전투력 랜킹 데이터를 사용
             data = {
-              character_name: apiData.character || combatData.character_name,
-              server_name: apiData.server || combatData.server_name,
-              class_name: combatData.class_name,
-              // 각 랜킹 타입처럼 div 구분
-              combat_rank: combatData.rank_position,
-              combat_power: combatData.power_value,
-              combat_change: combatData.change_amount,
+              character_name: apiData.character || combatData.character,
+              server_name: apiData.server || combatData.server,
+              class_name: combatData.class,
+              
+              // 전투력 데이터 처리
+              combat_rank: combatData.rank,
+              combat_power: combatData.power,
+              combat_change: combatData.change,
               combat_change_type: combatData.change_type,
               
-              charm_rank: charmData.rank_position,
-              charm_power: charmData.power_value,
-              charm_change: charmData.change_amount,
+              // 매력 데이터 처리
+              charm_rank: charmData.rank,
+              charm_power: charmData.power,
+              charm_change: charmData.change,
               charm_change_type: charmData.change_type,
               
-              life_rank: lifeData.rank_position,
-              life_power: lifeData.power_value,
-              life_change: lifeData.change_amount,
+              // 생활력 데이터 처리
+              life_rank: lifeData.rank,
+              life_power: lifeData.power,
+              life_change: lifeData.change,
               life_change_type: lifeData.change_type,
               
               // 기존 형태와의 호환을 위해 추가
-              rank_position: combatData.rank_position,
-              power_value: combatData.power_value,
-              change_amount: combatData.change_amount,
+              rank_position: combatData.rank,
+              power_value: combatData.power,
+              change_amount: combatData.change,
               change_type: combatData.change_type
             };
             
