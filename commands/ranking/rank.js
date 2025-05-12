@@ -109,6 +109,9 @@ module.exports = {
           });
           
           if (result.length > 0) {
+            // 디버깅을 위한 로그 추가
+            logger.info(`DB 조회 결과 (div=${type.div}): ${JSON.stringify(result[0])}`);
+            
             if (type.div === 1) {
               // 전투력 데이터는 기본 데이터로 사용
               data = result[0];
@@ -126,7 +129,8 @@ module.exports = {
         logger.error(`DB 오류: ${e.message}`);
       }
 
-      if (!data) {
+      // data 객체가 비어있는지 확인 (Object.keys를 사용하여 정확하게 체크)
+      if (Object.keys(data).length === 0) {
         try {
           const res = await axios.post(
             settings.RANK_API_URL,
@@ -134,6 +138,9 @@ module.exports = {
             { timeout: 30000 }
           );
           if (res.data.success) {
+            // API 응답 로깅
+            logger.info(`API 응답: ${JSON.stringify(res.data)}`);
+            
             // API에서 응답을 받아 파싱 (새로운 형식)
             const apiData = res.data.character;
             const rankings = apiData.rankings || {};
@@ -142,6 +149,11 @@ module.exports = {
             const combatData = rankings["전투력"]?.data?.[0] || {};
             const charmData = rankings["매력"]?.data?.[0] || {};
             const lifeData = rankings["생활력"]?.data?.[0] || {};
+            
+            // 각 랜킹 데이터 로깅
+            logger.info(`전투력 데이터: ${JSON.stringify(combatData)}`);
+            logger.info(`매력 데이터: ${JSON.stringify(charmData)}`);
+            logger.info(`생활력 데이터: ${JSON.stringify(lifeData)}`);
             
             // 기본적으로 전투력 랜킹 데이터를 사용
             data = {
@@ -170,6 +182,10 @@ module.exports = {
               change_amount: combatData.change_amount,
               change_type: combatData.change_type
             };
+            
+            // 파싱된 데이터 로깅
+            logger.info(`파싱된 API 데이터: ${JSON.stringify(data)}`);
+          
           }
           else
             return modalSubmit.followUp(
@@ -192,8 +208,8 @@ module.exports = {
       const className = data.class_name || data.class || '알 수 없음';
       
       // 전투력 랭킹 데이터 처리
-      const combatRank = data.combat_rank || data.rank_position || '알 수 없음';
-      const combatPower = data.combat_power || data.power_value || '알 수 없음';
+      const combatRank = data.rank_position || (data.combat_rank ? data.combat_rank + '위' : '알 수 없음');
+      const combatPower = data.power_value || (data.combat_power ? Number(data.combat_power).toLocaleString('ko-KR') : '알 수 없음');
       const combatRawChange = data.combat_change || data.change_amount || 0;
       let combatChange;
       try {
