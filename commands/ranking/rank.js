@@ -68,7 +68,10 @@ module.exports = {
           { div: 3, name: 'life', label: '생활력' }
         ];
         
-        // 각 랭킹 타입별 데이터 조회
+        // 각 랜킹 타입별 데이터 조회
+        let hasAllRankings = true; // 전부 존재하는지 확인하는 플래그
+        let rankResultCount = 0; // 가져온 결과 수 카운트
+        
         for (const type of rankTypes) {
           let query;
           if (type.div === 1) {
@@ -108,9 +111,11 @@ module.exports = {
             type: Sequelize.QueryTypes.SELECT
           });
           
+          // 디버깅을 위한 로그 추가
+          logger.info(`DB 조회 결과 (div=${type.div}): ${JSON.stringify(result[0])}`);
+          
           if (result.length > 0) {
-            // 디버깅을 위한 로그 추가
-            logger.info(`DB 조회 결과 (div=${type.div}): ${JSON.stringify(result[0])}`);
+            rankResultCount++;
             
             if (type.div === 1) {
               // 전투력 데이터는 기본 데이터로 사용
@@ -123,7 +128,16 @@ module.exports = {
               // 나머지 데이터 병합
               Object.assign(data, result[0]);
             }
+          } else {
+            // 하나라도 데이터가 없으면 API 호출 필요
+            hasAllRankings = false;
+            logger.info(`DB에서 ${type.label} 데이터가 없어 API 호출 필요`);
           }
+        }
+        
+        // 전투력, 매력, 생활력 중 하나라도 없으면 data 객체 초기화 (아래에서 API 호출하도록)
+        if (!hasAllRankings || rankResultCount === 0) {
+          data = {};
         }
       } catch (e) {
         logger.error(`DB 오류: ${e.message}`);
