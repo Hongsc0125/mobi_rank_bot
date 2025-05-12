@@ -23,7 +23,7 @@ module.exports = {
   async execute(interaction) {
     try {
       // (1) 슬래시 명령 접수 직후
-      await interaction.deferReply({ flags: MessageFlags.IsComponentsV2 });
+      await interaction.deferReply({ content: '실시간 인구 통계 조회중입니다... (최대 60초까지 소요될 수 있습니다)', flags: MessageFlags.IsComponentsV2 });
 
       // API에서 인구 데이터 조회
       const response = await axios.get('https://thorough-possibly-zebra.ngrok-free.app/population', {

@@ -56,7 +56,7 @@ module.exports = {
       const server = modalSubmit.fields.getTextInputValue('server');
       const character = modalSubmit.fields.getTextInputValue('character');
 
-      await modalSubmit.deferReply();
+      await modalSubmit.deferReply({ content: '실시간 랜킹 조회중입니다... (최대 60초까지 소요될 수 있습니다)' });
 
       // 3) DB 또는 API에서 데이터 조회
       let data = {};
