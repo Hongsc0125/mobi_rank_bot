@@ -89,7 +89,10 @@ module.exports = {
             { server, character },
             { timeout: 30000 }
           );
-          if (res.data.success) data = res.data.character;
+          if (res.data.success) {
+            // API에서 응답을 그대로 사용
+            data = res.data.character;
+          }
           else
             return modalSubmit.followUp(
               `데이터 조회 실패: ${res.data.message}`
@@ -105,7 +108,7 @@ module.exports = {
       // 4) 텍스트 및 이미지 준비
       const cardImage = 'https://harmari.duckdns.org/static/ranking_card.png';
       
-      // 캐릭터 정보 추출 및 키 매핑 (두 가지 종류의 키 고려)
+      // 캐릭터 정보 추출 및 키 매핑
       const name = data.character_name || data.character || '알 수 없음';
       const serverName = data.server_name || data.server || '알 수 없음';
       const className = data.class_name || data.class || '알 수 없음';
