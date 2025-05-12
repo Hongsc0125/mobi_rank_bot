@@ -90,8 +90,18 @@ module.exports = {
             { timeout: 30000 }
           );
           if (res.data.success) {
-            // API에서 응답을 그대로 사용
-            data = res.data.character;
+            // API에서 응답을 받아 파싱
+            const apiData = res.data.character;
+            data = {
+              // DB 용 컴럼명에 맞춰 데이터 정리
+              character_name: apiData.character_name,
+              server_name: apiData.server_name,
+              class_name: apiData.class_name,
+              rank_position: apiData.rank_position,
+              power_value: apiData.power_value,
+              change_amount: apiData.change_amount,
+              change_type: apiData.change_type
+            };
           }
           else
             return modalSubmit.followUp(
