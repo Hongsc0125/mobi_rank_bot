@@ -149,7 +149,7 @@ module.exports = {
           const res = await axios.post(
             settings.RANK_API_URL,
             { server, character },
-            { timeout: 30000 }
+            { timeout: 60000 }
           );
           if (res.data.success) {
             // API 응답 로깅
