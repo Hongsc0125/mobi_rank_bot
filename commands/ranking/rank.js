@@ -56,7 +56,7 @@ module.exports = {
       const server = modalSubmit.fields.getTextInputValue('server');
       const character = modalSubmit.fields.getTextInputValue('character');
 
-      await modalSubmit.deferReply({ content: '실시간 랜킹 조회중입니다... (최대 60초까지 소요될 수 있습니다)' });
+      await modalSubmit.deferReply({ content: '실시간 랭킹 조회중입니다... (최대 60초까지 소요될 수 있습니다)' });
 
       // 3) DB 또는 API에서 데이터 조회
       let data = {};
@@ -68,7 +68,7 @@ module.exports = {
           { div: 3, name: 'life', label: '생활력' }
         ];
         
-        // 각 랜킹 타입별 데이터 조회
+        // 각 랭킹 타입별 데이터 조회
         let hasAllRankings = true; // 전부 존재하는지 확인하는 플래그
         let rankResultCount = 0; // 가져온 결과 수 카운트
         
@@ -159,12 +159,12 @@ module.exports = {
             const apiData = res.data.character;
             const rankings = apiData.rankings || {};
             
-            // 랜킹 데이터 추출
+            // 랭킹 데이터 추출
             const combatData = rankings["전투력"] || {};
             const charmData = rankings["매력"] || {};
             const lifeData = rankings["생활력"] || {};
             
-            // 각 랜킹 데이터 로깅
+            // 각 랭킹 데이터 로깅
             logger.info(`전투력 데이터: ${JSON.stringify(combatData)}`);
             logger.info(`매력 데이터: ${JSON.stringify(charmData)}`);
             logger.info(`생활력 데이터: ${JSON.stringify(lifeData)}`);

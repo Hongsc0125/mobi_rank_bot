@@ -49,6 +49,21 @@ const rankSequelize = new Sequelize(settings.RANK_DATA_URL, {
   }
 });
 
+// kadan 데이터베이스 엔진
+const kadanSequelize = new Sequelize(settings.KADAN_DB_URL, {
+  dialect: 'postgres',
+  logging: msg => logger.debug(msg),
+  dialectOptions: {
+    ssl: false
+  },
+  pool: {
+    max: 5,
+    min: 0,
+    acquire: 30000,
+    idle: 10000
+  }
+});
+
 // 세션 팩토리 생성
 const sessionmaker = (options) => {
   return sequelize;
@@ -63,6 +78,9 @@ const testConnection = async () => {
     await rankSequelize.authenticate();
     logger.info('랭크 데이터베이스 연결 성공');
     
+    await kadanSequelize.authenticate();
+    logger.info('kadan 데이터베이스 연결 성공');
+    
     return true;
   } catch (error) {
     logger.error(`데이터베이스 연결 실패: ${error.message}`);
@@ -73,6 +91,7 @@ const testConnection = async () => {
 module.exports = {
   sequelize,
   rankSequelize: rankSequelize,
+  kadanSequelize: kadanSequelize,
   sessionmaker,
   testConnection,
   logger

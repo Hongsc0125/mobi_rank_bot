@@ -102,9 +102,6 @@ client.login(process.env.DISCORD_TOKEN)
   .catch(error => {
     console.error(`봇 로그인 오류: ${error.message}`);
     console.log(`환경변수 확인: DISCORD_TOKEN ${process.env.DISCORD_TOKEN ? '존재함' : '없음'}`);
-    if (process.env.DISCORD_TOKEN) {
-      console.log(`토큰 일부: ${process.env.DISCORD_TOKEN.substring(0, 10)}...`);
-    }
   });
 
 // 에러 핸들링

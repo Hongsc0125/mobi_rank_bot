@@ -5,8 +5,10 @@ require('dotenv').config();
 const settings = {
     // 데이터베이스 설정
     DATABASE_NAME: process.env.DATABASE_NAME || 'rank_data',
+    KADAN_DB_NAME: 'kadan',
     DATABASE_URL: `postgresql://${process.env.DB_USER}:${process.env.DB_PW}@${process.env.DATABASE_URL}/${process.env.DATABASE_NAME}`,
     RANK_DATA_URL: `postgresql://${process.env.DB_USER}:${process.env.DB_PW}@${process.env.DATABASE_URL}/${process.env.DATABASE_NAME}`,
+    KADAN_DB_URL: `postgresql://${process.env.DB_USER}:${process.env.DB_PW}@${process.env.DATABASE_URL}/kadan`,
     
     // Discord 봇 설정
     DISCORD_TOKEN: process.env.DISCORD_TOKEN,
