@@ -295,7 +295,7 @@ module.exports = {
     
     const section = new SectionBuilder()
     .setThumbnailAccessory(
-      new ThumbnailBuilder().setURL(`http://${process.env.SERVER_IP}:${process.env.WEB_PORT}/images/class_icon/${className}.png`)
+      new ThumbnailBuilder().setURL(`http://${process.env.SERVER_IP}:${process.env.WEB_PORT}/images/character_icon/${className}.png`)
     )
     .addTextDisplayComponents(
         new TextDisplayBuilder().setContent(`### <:__:1371226603702583486> 전투력 : ${combatPower}\n> ${combatRank}\n> \`${combatEmoji}${Math.abs(combatChange).toLocaleString('ko-KR')}\`\n\n`
