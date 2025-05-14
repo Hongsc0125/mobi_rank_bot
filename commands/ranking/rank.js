@@ -327,7 +327,7 @@ module.exports = {
         // `> **변동** : ${lifeEmoji} ${Math.abs(lifeChange).toLocaleString('ko-KR')}`;
 
          
-      const footerContent = `<:__:1371228573146419372> *정보는 거의 실시간 조회 중입니다. (약간의 오차가 있을 수 있음)*`;
+      const footerContent = `<:__:1371228573146419372> 정보는 거의 실시간 조회 중입니다. (약간의 오차가 있을 수 있음)`;
 
       // 5) Components V2 빌더로 컨테이너 생성 :contentReference[oaicite:0]{index=0}
       const container = new ContainerBuilder()
