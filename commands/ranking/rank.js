@@ -298,11 +298,11 @@ module.exports = {
       new ThumbnailBuilder().setURL(`http://${process.env.SERVER_IP}:${process.env.WEB_PORT}/images/character_icon/${className}.png`)
     )
     .addTextDisplayComponents(
-        new TextDisplayBuilder().setContent(`### <:__:1371226603702583486> 전투력 : ${combatPower}\n> ${combatRank}\n> \`${combatEmoji}${Math.abs(combatChange).toLocaleString('ko-KR')}\`\n\n`
+        new TextDisplayBuilder().setContent(`### <:__:1371226603702583486> 전투력 : ${combatPower}\n> ${combatRank}\n> \`${combatEmoji}${Math.abs(combatChange).toLocaleString('ko-KR')}\`\n`
       +
-      `### <:__:1371226630319509615> 매력 : ${charmPower}\n> ${charmRank}\n> \`${charmEmoji}${Math.abs(charmChange).toLocaleString('ko-KR')}\`\n\n`
+      `### <:__:1371226630319509615> 매력 : ${charmPower}\n> ${charmRank}\n> \`${charmEmoji}${Math.abs(charmChange).toLocaleString('ko-KR')}\`\n`
       +
-      `### <:__:1371226678478770276> 생활력 : ${lifePower}\n> ${lifeRank}\n> \`${lifeEmoji}${Math.abs(lifeChange).toLocaleString('ko-KR')}\`\n\n`
+      `### <:__:1371226678478770276> 생활력 : ${lifePower}\n> ${lifeRank}\n> \`${lifeEmoji}${Math.abs(lifeChange).toLocaleString('ko-KR')}\`\n`
       )
     )
     // <:__:1372099666698698752> 그래프모양
