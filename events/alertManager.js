@@ -185,7 +185,6 @@ module.exports = {
                                 }
                                 
                                 // 알림 메시지 컴포넌트 준비
-                                const components = [];
                                 let hasAlerts = false;
                                 
                                 // 알림 유형별로 컴포넌트 추가
@@ -218,7 +217,7 @@ module.exports = {
                                         );
 
                                     // 컴포넌트 추가
-                                    components.push(
+                                    const components =
                                         new ContainerBuilder()
                                             .addSectionComponents(section)
                                             .addSeparatorComponents(
@@ -227,7 +226,6 @@ module.exports = {
                                             .addTextDisplayComponents(
                                                 new TextDisplayBuilder().setContent(`*<t:${unixTime}:F>*`)
                                             )
-                                    );
                                     
                                     hasAlerts = true;
                                     
@@ -244,7 +242,10 @@ module.exports = {
                                 // 알림이 있는 경우에만 전송
                                 if (hasAlerts) {
                                     try {
-                                        await user.send({ components });
+                                        await user.send({
+                                            components: [components],
+                                            flags: MessageFlags.IsComponentsV2
+                                        });
                                         logger.info(`알림 전송 완료: ${user.username} (${userId})`);
                                     } catch (e) {
                                         if (e.code === 50007) {
