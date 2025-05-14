@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder, Colors, MessageFlags } = require('discord.js');
 const { logger } = require('../../db/session');
-const { ALERT_TYPE_NAMES } = require('./alert');
+const { ALERT_TYPE_NAMES } = require('../../utils/alert');
 const settings = require('../../core/config');
 
 module.exports = {

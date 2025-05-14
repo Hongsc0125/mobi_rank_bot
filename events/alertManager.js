@@ -17,7 +17,7 @@ const {
   } = require('discord.js');
 const { Events } = require('discord.js');
 const { logger } = require('../db/session');
-const { getUpcomingAlerts, DAY_OF_WEEK, ALERT_TYPE_NAMES, ALERT_TYPE_EMOJI } = require('../commands/utility/alert');
+const { getUpcomingAlerts, DAY_OF_WEEK, ALERT_TYPE_NAMES, ALERT_TYPE_EMOJI } = require('../utils/alert');
 const settings = require('../core/config');
 const { DateTime } = require('luxon');
 
