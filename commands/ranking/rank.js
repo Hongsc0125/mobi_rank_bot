@@ -310,7 +310,7 @@ module.exports = {
 
 
       const textContent =
-        `## [${serverName}] ${name}`
+        `## [${serverName}] ${name} - ${className}`
         // `### <:__:1371226603702583486> 전투력\n` +
         // `> **랭킹** : ${combatRank}\n` +
         // `> **점수** : ${combatPower}\n` +
