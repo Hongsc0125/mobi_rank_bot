@@ -184,10 +184,7 @@ module.exports = {
                                     alertTypes[alertType].push(alert);
                                 }
                                 
-                                // 알림 메시지 컴포넌트 준비
-                                let hasAlerts = false;
-                                
-                                // 알림 유형별로 컴포넌트 추가
+                                // 각 알림 유형별로 개별 처리
                                 for (const [alertType, alertsOfType] of Object.entries(alertTypes)) {
                                     // 이미 처리된 알림 건너뛰기
                                     if (isWarning && this.wasAlertSent(alertsOfType[0], userId)) {
@@ -216,18 +213,30 @@ module.exports = {
                                                 : `\n알림 : **${typeName}**가 지금 시작되었습니다!`)
                                         );
 
-                                    // 컴포넌트 추가
-                                    const components =
-                                        new ContainerBuilder()
-                                            .addSectionComponents(section)
-                                            .addSeparatorComponents(
-                                                new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true)
-                                            )
-                                            .addTextDisplayComponents(
-                                                new TextDisplayBuilder().setContent(`*<t:${unixTime}:F>*`)
-                                            )
+                                    // 각 유형별 컴포넌트 생성
+                                    const componentForType = new ContainerBuilder()
+                                        .addSectionComponents(section)
+                                        .addSeparatorComponents(
+                                            new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true)
+                                        )
+                                        .addTextDisplayComponents(
+                                            new TextDisplayBuilder().setContent(`*<t:${unixTime}:F>*`)
+                                        );
                                     
-                                    hasAlerts = true;
+                                    // 각 알림 유형별로 즉시 전송
+                                    try {
+                                        await user.send({
+                                            components: [componentForType],
+                                            flags: MessageFlags.IsComponentsV2
+                                        });
+                                        logger.info(`알림 전송 완료 (${typeName}): ${user.username} (${userId})`);
+                                    } catch (e) {
+                                        if (e.code === 50007) {
+                                            logger.warn(`사용자 ${user.username} (${userId})에게 DM을 보낼 수 없습니다.`);
+                                        } else {
+                                            logger.error(`알림 전송 중 오류: ${e.message}`);
+                                        }
+                                    }
                                     
                                     // 알림 발송 기록
                                     if (!isWarning) {
@@ -235,23 +244,6 @@ module.exports = {
                                             const alertKey = `${alert.alert_id}-${userId}`;
                                             const today = DateTime.now().setZone(settings.TIMEZONE).toISODate();
                                             this.lastSentAlerts.set(alertKey, today);
-                                        }
-                                    }
-                                }
-                                
-                                // 알림이 있는 경우에만 전송
-                                if (hasAlerts) {
-                                    try {
-                                        await user.send({
-                                            components: [components],
-                                            flags: MessageFlags.IsComponentsV2
-                                        });
-                                        logger.info(`알림 전송 완료: ${user.username} (${userId})`);
-                                    } catch (e) {
-                                        if (e.code === 50007) {
-                                            logger.warn(`사용자 ${user.username} (${userId})에게 DM을 보낼 수 없습니다.`);
-                                        } else {
-                                            logger.error(`알림 전송 중 오류: ${e.message}`);
                                         }
                                     }
                                 }
