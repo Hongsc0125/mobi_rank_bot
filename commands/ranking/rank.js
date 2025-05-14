@@ -288,22 +288,46 @@ module.exports = {
         lifeChangeType === 'down' ? '🔻' : 
         '-';
 
+
+    // 
+    
+    const section = new SectionBuilder()
+    .setThumbnailAccessory(
+      new ThumbnailBuilder().setURL(`http://${process.env.SERVER_IP}:${process.env.WEB_PORT}/images/server_icon/${serverName}.png`)
+    )
+    .addTextDisplayComponents(
+        new TextDisplayBuilder().setContent(`### <:__:1371226603702583486> 전투력 : ${combatPower} | ${combatRank} [${combatEmoji}${Math.abs(combatChange).toLocaleString('ko-KR')}]`)
+    )
+    .addTextDisplayComponents(
+        new TextDisplayBuilder().setContent(`### <:__:1371226630319509615> 매력 : ${charmPower} | ${charmRank} [${charmEmoji}${Math.abs(charmChange).toLocaleString('ko-KR')}]`)
+    )
+    .addTextDisplayComponents(
+        new TextDisplayBuilder().setContent(`### <:__:1371226678478770276> 생활력 : ${lifePower} | ${lifeRank} [${lifeEmoji}${Math.abs(lifeChange).toLocaleString('ko-KR')}]`)
+    )
+
+
+    // 컴포넌트 생성
+    const components = 
+        new ContainerBuilder()
+
+
+
       const textContent =
-        `## [ ${serverName} ] ${name} - ${className} \n\n` +
-        `### <:__:1371226603702583486> 전투력\n` +
-        `> **랭킹** : ${combatRank}\n` +
-        `> **점수** : ${combatPower}\n` +
-        `> **변동** : ${combatEmoji} ${Math.abs(combatChange).toLocaleString('ko-KR')}\n\n` +
+        `## ${name} - ${className}`
+        // `### <:__:1371226603702583486> 전투력\n` +
+        // `> **랭킹** : ${combatRank}\n` +
+        // `> **점수** : ${combatPower}\n` +
+        // `> **변동** : ${combatEmoji} ${Math.abs(combatChange).toLocaleString('ko-KR')}\n\n` +
         
-        `### <:__:1371226630319509615> 매력\n` +
-        `> **랭킹** : ${charmRank}\n` +
-        `> **점수** : ${charmPower}\n` +
-        `> **변동** : ${charmEmoji} ${Math.abs(charmChange).toLocaleString('ko-KR')}\n\n` +
+        // `### <:__:1371226630319509615> 매력\n` +
+        // `> **랭킹** : ${charmRank}\n` +
+        // `> **점수** : ${charmPower}\n` +
+        // `> **변동** : ${charmEmoji} ${Math.abs(charmChange).toLocaleString('ko-KR')}\n\n` +
         
-        `### <:__:1371226678478770276> 생활력\n` +
-        `> **랭킹** : ${lifeRank}\n` +
-        `> **점수** : ${lifePower}\n` +
-        `> **변동** : ${lifeEmoji} ${Math.abs(lifeChange).toLocaleString('ko-KR')}`;
+        // `### <:__:1371226678478770276> 생활력\n` +
+        // `> **랭킹** : ${lifeRank}\n` +
+        // `> **점수** : ${lifePower}\n` +
+        // `> **변동** : ${lifeEmoji} ${Math.abs(lifeChange).toLocaleString('ko-KR')}`;
 
          
       const footerContent = `<:__:1371228573146419372> *정보는 거의 실시간 조회 중입니다. (약간의 오차가 있을 수 있음)*`;
@@ -321,8 +345,9 @@ module.exports = {
         .addTextDisplayComponents(
           new TextDisplayBuilder().setContent(textContent)
         )
+        .addSectionComponents(section)
         .addSeparatorComponents(
-          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true),
+            new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true)
         )
         .addTextDisplayComponents(
           new TextDisplayBuilder().setContent(footerContent)
