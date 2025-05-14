@@ -3,44 +3,50 @@ const { Sequelize, Op } = require('sequelize');
 const { kadanSequelize, logger } = require('../../db/session');
 const settings = require('../../core/config');
 
-// 요일 정의
-const DAY_OF_WEEK = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+// 요일 정의 - 데이터베이스에 저장된 형태로 변경
+const DAY_OF_WEEK = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
-// 알림 타입 이름 및 이모지
+// 알림 타입 이름 및 이모지 (데이터베이스에 저장된 실제 형식 기준)
 const ALERT_TYPE_NAMES = {
-    'monday': '월요일',
-    'tuesday': '화요일',
-    'wednesday': '수요일',
-    'thursday': '목요일',
-    'friday': '금요일',
-    'saturday': '토요일',
-    'sunday': '일요일',
+    'boss': '보스',
+    'barrier': '결계',
+    'mon': '월요일',
+    'tue': '화요일',
+    'wed': '수요일',
+    'thu': '목요일',
+    'fri': '금요일',
+    'sat': '토요일',
+    'sun': '일요일',
     'day': '매일',
-    'custom_monday': '커스텀 월요일',
-    'custom_tuesday': '커스텀 화요일',
-    'custom_wednesday': '커스텀 수요일',
-    'custom_thursday': '커스텀 목요일',
-    'custom_friday': '커스텀 금요일',
-    'custom_saturday': '커스텀 토요일',
-    'custom_sunday': '커스텀 일요일'
+    'custom': '커스텀',
+    'custom_mon': '커스텀 월요일',
+    'custom_tue': '커스텀 화요일',
+    'custom_wed': '커스텀 수요일',
+    'custom_thu': '커스텀 목요일',
+    'custom_fri': '커스텀 금요일',
+    'custom_sat': '커스텀 토요일',
+    'custom_sun': '커스텀 일요일'
 };
 
 const ALERT_TYPE_EMOJI = {
-    'monday': '🔵',
-    'tuesday': '🟠',
-    'wednesday': '🟢',
-    'thursday': '🟣',
-    'friday': '🟡',
-    'saturday': '🔴',
-    'sunday': '⚪',
-    'day': '📅',
-    'custom_monday': '💠',
-    'custom_tuesday': '💠',
-    'custom_wednesday': '💠',
-    'custom_thursday': '💠',
-    'custom_friday': '💠',
-    'custom_saturday': '💠',
-    'custom_sunday': '💠'
+    'boss': '💀',       // 울린 우주인
+    'barrier': '🔰',    // 결계
+    'mon': '🔵',       // 월요일 - 파란색
+    'tue': '🟠',       // 화요일 - 주황색
+    'wed': '🟢',       // 수요일 - 초록색
+    'thu': '🟣',       // 목요일 - 보라색
+    'fri': '🟡',       // 금요일 - 노란색
+    'sat': '🔴',       // 토요일 - 빨간색
+    'sun': '⚪',         // 일요일 - 흰색
+    'day': '📅',       // 매일
+    'custom': '💠',     // 커스텀 일반
+    'custom_mon': '💠',  // 커스텀 월요일
+    'custom_tue': '💠',  // 커스텀 화요일
+    'custom_wed': '💠',  // 커스텀 수요일
+    'custom_thu': '💠',  // 커스텀 목요일
+    'custom_fri': '💠',  // 커스텀 금요일
+    'custom_sat': '💠',  // 커스텀 토요일
+    'custom_sun': '💠'   // 커스텀 일요일
 };
 
 // 알림 조회 쿼리 함수
@@ -77,21 +83,7 @@ async function getUpcomingAlerts(alertTime, dayOfWeek) {
 }
 
 module.exports = {
-    data: new SlashCommandBuilder()
-        .setName('알림')
-        .setDescription('알림 관련 정보를 표시합니다.'),
-    
-    async execute(interaction) {
-        // MessageFlags 가져오기
-        const { MessageFlags } = require('discord.js');
-        
-        await interaction.reply({ 
-            content: '현재 당신이 등록한 알림이 자동으로 처리되고 있습니다. 특별한 문제가 있다면 관리자에게 문의해주세요.',
-            flags: MessageFlags.Ephemeral
-        });
-    },
-    
-    // 알림 관련 기능을 여기에 추가
+    // 알림 관련 함수 및 상수 내보내기
     getUpcomingAlerts,
     DAY_OF_WEEK,
     ALERT_TYPE_NAMES,

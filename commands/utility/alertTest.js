@@ -12,9 +12,9 @@ module.exports = {
                 .setDescription('테스트할 알림 유형')
                 .setRequired(true)
                 .addChoices(
-                    { name: '결계', value: 'REALM' },
-                    { name: '보스', value: 'BOSS' },
-                    { name: '커스텀', value: 'CUSTOM' }
+                    { name: '결계', value: 'barrier' },
+                    { name: '보스', value: 'boss' },
+                    { name: '커스텀', value: 'custom' }
                 ))
         .addBooleanOption(option =>
             option.setName('사전알림')
