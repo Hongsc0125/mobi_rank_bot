@@ -5,6 +5,8 @@ const {
   TextInputStyle,
   ActionRowBuilder,
   AttachmentBuilder,
+  SectionBuilder,
+  ThumbnailBuilder,
   MessageFlags,
   ContainerBuilder,
   MediaGalleryBuilder,
