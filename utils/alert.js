@@ -1,7 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder, Colors } = require('discord.js');
 const { Sequelize, Op } = require('sequelize');
-const { kadanSequelize, logger } = require('../../db/session');
-const settings = require('../../core/config');
+const { kadanSequelize, logger } = require('../db/session');
+const settings = require('../core/config');
 
 // 요일 정의 - 데이터베이스에 저장된 형태로 변경
 const DAY_OF_WEEK = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
