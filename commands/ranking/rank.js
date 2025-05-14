@@ -298,14 +298,11 @@ module.exports = {
       new ThumbnailBuilder().setURL(`http://${process.env.SERVER_IP}:${process.env.WEB_PORT}/images/class_icon/${className}.png`)
     )
     .addTextDisplayComponents(
-        new TextDisplayBuilder().setContent(`### <:__:1371226603702583486> 전투력 : ${combatPower}\n
-                                            \t순위 : ${combatRank}(${combatEmoji}${Math.abs(combatChange).toLocaleString('ko-KR')})\n\n`
+        new TextDisplayBuilder().setContent(`### <:__:1371226603702583486> 전투력 : ${combatPower}\n\t> 순  위 : ${combatRank}(${combatEmoji}${Math.abs(combatChange).toLocaleString('ko-KR')})\n\n`
       +
-      `### <:__:1371226630319509615> 매력 : ${charmPower}\n
-                                            \t순위 : ${charmRank}(${charmEmoji}${Math.abs(charmChange).toLocaleString('ko-KR')})\n\n`
+      `### <:__:1371226630319509615> 매력 : ${charmPower}\n> 순  위 : ${charmRank}(${charmEmoji}${Math.abs(charmChange).toLocaleString('ko-KR')})\n\n`
       +
-      `### <:__:1371226678478770276> 생활력 : ${lifePower}\n
-                                            \t순위 : ${lifeRank}(${lifeEmoji}${Math.abs(lifeChange).toLocaleString('ko-KR')})\n\n`
+      `### <:__:1371226678478770276> 생활력 : ${lifePower}\n> 순  위 : ${lifeRank}(${lifeEmoji}${Math.abs(lifeChange).toLocaleString('ko-KR')})\n\n`
       )
     )
 
@@ -345,7 +342,7 @@ module.exports = {
         .addTextDisplayComponents(
           new TextDisplayBuilder().setContent(textContent)
         )
-        
+
         .addSectionComponents(section)
 
         .addSeparatorComponents(
