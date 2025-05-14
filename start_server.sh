@@ -26,4 +26,4 @@ nohup node server.js >> "${LOG_FILE}" 2>&1 &
 SERVER_PID=$!
 echo "${SERVER_PID}" > server.pid
 echo "웹 서버가 백그라운드에서 시작되었습니다. (PID: ${SERVER_PID})"
-echo "로그를 확인하려면: tail -f ${LOG_FILE}"
+echo "로그확인: tail -f ${LOG_FILE}"

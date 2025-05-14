@@ -308,7 +308,7 @@ module.exports = {
                     // 다음 분의 시작까지 기다릴 시간(밀리초)
                     const delay = ((60 - seconds) * 1000) - milliseconds;
                     
-                    logger.info(`알림 관리자 초기화 중... ${Math.floor(delay/1000)}.${Math.floor(delay%1000)}초 후 첫 분 시작에 맞춰 실행됩니다.`);
+                    // logger.info(`알림 관리자 초기화 중... ${Math.floor(delay/1000)}.${Math.floor(delay%1000)}초 후 첫 분 시작에 맞춰 실행됩니다.`);
                     
                     // 처음에는 분의 정확한 시작 시점에 맞춰 실행
                     setTimeout(() => {
@@ -319,7 +319,7 @@ module.exports = {
                         
                         // 이후 정확히 1분마다 실행 (매 분 00초에 실행)
                         this.checkInterval = setInterval(() => {
-                            logger.info(`정각 알림 확인 시작 (${DateTime.now().setZone(settings.TIMEZONE).toFormat('HH:mm:ss.SSS')})`);
+                            // logger.info(`정각 알림 확인 시작 (${DateTime.now().setZone(settings.TIMEZONE).toFormat('HH:mm:ss.SSS')})`);
                             this.checkAlerts();
                         }, 60 * 1000);
                     }, delay);
