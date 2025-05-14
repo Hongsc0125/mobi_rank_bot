@@ -298,14 +298,15 @@ module.exports = {
       new ThumbnailBuilder().setURL(`http://${process.env.SERVER_IP}:${process.env.WEB_PORT}/images/class_icon/${className}.png`)
     )
     .addTextDisplayComponents(
-        new TextDisplayBuilder().setContent(`### <:__:1371226603702583486> 전투력 : ${combatPower}\n> ${combatRank} \`${combatEmoji}${Math.abs(combatChange).toLocaleString('ko-KR')}\`\n\n`
+        new TextDisplayBuilder().setContent(`### <:__:1371226603702583486> 전투력 : ${combatPower}\n> ${combatRank}\n> \`${combatEmoji}${Math.abs(combatChange).toLocaleString('ko-KR')}\`\n\n`
       +
-      `### <:__:1371226630319509615> 매력 : ${charmPower}\n> ${charmRank} \`${charmEmoji}${Math.abs(charmChange).toLocaleString('ko-KR')}\`\n\n`
+      `### <:__:1371226630319509615> 매력 : ${charmPower}\n> ${charmRank}\n> \`${charmEmoji}${Math.abs(charmChange).toLocaleString('ko-KR')}\`\n\n`
       +
-      `### <:__:1371226678478770276> 생활력 : ${lifePower}\n> ${lifeRank} \`${lifeEmoji}${Math.abs(lifeChange).toLocaleString('ko-KR')}\`\n\n`
+      `### <:__:1371226678478770276> 생활력 : ${lifePower}\n> ${lifeRank}\n> \`${lifeEmoji}${Math.abs(lifeChange).toLocaleString('ko-KR')}\`\n\n`
       )
     )
-
+    // <:__:1372099666698698752> 그래프모양
+    // <:__:1371226678478770276> 시례모양
 
 
 
@@ -327,7 +328,7 @@ module.exports = {
         // `> **변동** : ${lifeEmoji} ${Math.abs(lifeChange).toLocaleString('ko-KR')}`;
 
          
-      const footerContent = `<:__:1371228573146419372> 정보는 거의 실시간 조회 중입니다. (약간의 오차가 있을 수 있음)`;
+      const footerContent = `<:__:1372099666698698752> 정보는 거의 실시간 조회 중입니다. (약간의 오차가 있을 수 있음)`;
 
       // 5) Components V2 빌더로 컨테이너 생성 :contentReference[oaicite:0]{index=0}
       const container = new ContainerBuilder()
