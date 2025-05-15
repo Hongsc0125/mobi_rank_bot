@@ -914,40 +914,8 @@ module.exports = {
                 return;
             }
             
-            // 현재 시간(Unix 타임스탬프, 초 단위)
-            const currentTimestamp = Math.floor(Date.now() / 1000);
-            
-            // 현재 채널에서 활성화된 심층 제보 확인
-            const activeReports = await getActiveDeepReports(message.channel.id, currentTimestamp);
-            
-            // 활성화된 심층 제보 중에서 여신의뜰과 얼음협곡 각각 중복 여부 확인
-            const activeGarden = activeReports.find(report => 
-                report.deep_type === '여신의뜰' && !report.is_expired && report.is_error !== 'Y'
-            );
-            
-            const activeIce = activeReports.find(report => 
-                report.deep_type === '얼음협곡' && !report.is_expired && report.is_error !== 'Y'
-            );
-            
-            // 중복 제보 확인 메시지 준비
-            let duplicateMessage = '';
-            if (activeGarden && activeIce) {
-                duplicateMessage = '현재 여신의뜰과 얼음협곡 모두 활성화된 심층 제보가 있습니다. 시간이 지난 후 다시 시도해주세요.';
-            } else if (activeGarden) {
-                duplicateMessage = '현재 여신의뜰에 활성화된 심층 제보가 있습니다. 다른 지역을 선택하거나, 시간이 지난 후 다시 시도해주세요.';
-            } else if (activeIce) {
-                duplicateMessage = '현재 얼음협곡에 활성화된 심층 제보가 있습니다. 다른 지역을 선택하거나, 시간이 지난 후 다시 시도해주세요.';
-            }
-            
-            // 중복된 제보가 있으면 메시지 삭제 및 안내
-            if (duplicateMessage) {
-                await message.delete().catch(console.error);
-                const reply = await message.channel.send({
-                    content: `<@${message.author.id}> ${duplicateMessage}`
-                });
-                setTimeout(() => reply.delete().catch(console.error), 5000);
-                return;
-            }
+            // 이미지 업로드 시점에는 중복 제보 검사를 하지 않습니다.
+            // 맵 선택 시점에 해당 맵에 대한 중복 제보 검사를 합니다.
 
             // 이미지 파일 정보 준비
             const fileExtension = path.extname(attachment.name) || '.png';
