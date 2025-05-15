@@ -52,24 +52,24 @@ async function manageGuideMessage(channel, guideContent) {
             if (botGuideMessage.id !== latestMessage.id) {
                 await botGuideMessage.delete().catch(() => {});
                 const newGuideMessage = await channel.send(guideContent);
-                console.log(`채널 ${channel.name}의 안내 메시지 재생성`); 
+                // console.log(`채널 ${channel.name}의 안내 메시지 재생성`); 
                 return newGuideMessage;
             }
             
             // 기존 메시지가 최신 메시지이고 내용이 같으면 유지
             if (botGuideMessage.content === guideContent) {
-                console.log(`채널 ${channel.name}의 안내 메시지 변경 없음`);
+                // console.log(`채널 ${channel.name}의 안내 메시지 변경 없음`);
                 return botGuideMessage;
             }
             
             // 기존 메시지 내용이 다르면 업데이트
             await botGuideMessage.edit(guideContent).catch(() => {});
-            console.log(`채널 ${channel.name}의 안내 메시지 업데이트`);
+            // console.log(`채널 ${channel.name}의 안내 메시지 업데이트`);
             return botGuideMessage;
         } else {
             // 새 메시지 생성
             const newGuideMessage = await channel.send(guideContent);
-            console.log(`채널 ${channel.name}에 새 안내 메시지 생성`);
+            // console.log(`채널 ${channel.name}에 새 안내 메시지 생성`);
             return newGuideMessage;
         }
     } catch (error) {
@@ -104,23 +104,23 @@ async function updateDeepReports(client) {
             try {
                 const discordChannel = await client.channels.fetch(channel.deep_ch_id).catch(() => null);
                 if (!discordChannel) {
-                    console.log(`채널 접근 불가: ${channel.deep_ch_id}`);
+                    // console.log(`채널 접근 불가: ${channel.deep_ch_id}`);
                     continue;
                 }
                 
                 // 채널에 봇이 쓰기 권한이 있는지 확인
                 if (!discordChannel.permissionsFor(client.user).has(['SendMessages', 'ViewChannel'])) {
-                    console.log(`채널 권한 부족: ${discordChannel.name}`);
+                    // console.log(`채널 권한 부족: ${discordChannel.name}`);
                     continue;
                 }
                 
-                console.log(`채널 업데이트 시도: ${discordChannel.name}`);
+                // console.log(`채널 업데이트 시도: ${discordChannel.name}`);
                 
                 // 안내 메시지 관리
                 try {
                     const updatedGuideMessage = await manageGuideMessage(discordChannel, guideMessage);
                     if (updatedGuideMessage) {
-                        console.log(`${discordChannel.name} 채널의 안내 메시지 관리 완료`);
+                        // console.log(`${discordChannel.name} 채널의 안내 메시지 관리 완료`);
                     }
                 } catch (guideError) {
                     console.error(`안내 메시지 관리 실패 (${discordChannel.name}):`, guideError.message);
