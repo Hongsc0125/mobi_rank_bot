@@ -293,9 +293,12 @@ module.exports = {
 
     // 
     
+    // 직업 이름에서 띄어쓰기 제거 (예: '견습 힐러' -> '견습힐러')
+    const classNameWithoutSpace = className.replace(/\s+/g, '');
+    
     const section = new SectionBuilder()
     .setThumbnailAccessory(
-      new ThumbnailBuilder().setURL(`http://${process.env.SERVER_IP}:${process.env.WEB_PORT}/images/character_icon/${className}.png`)
+      new ThumbnailBuilder().setURL(`http://${process.env.SERVER_IP}:${process.env.WEB_PORT}/images/character_icon/${classNameWithoutSpace}.png`)
     )
     .addTextDisplayComponents(
         new TextDisplayBuilder().setContent(`### <:__:1371226603702583486> 전투력 : ${combatPower}\n> ${combatRank}\n> \`${combatEmoji}${Math.abs(combatChange).toLocaleString('ko-KR')}\`\n`
@@ -305,8 +308,8 @@ module.exports = {
       `### <:__:1371226630319509615> 매력 : ${charmPower}\n> ${charmRank}\n> \`${charmEmoji}${Math.abs(charmChange).toLocaleString('ko-KR')}\`\n`
       )
     )
-    // <:__:1372099666698698752> 그래프모양
-    // <:__:1371226678478770276> 시례모양
+    // <:__:1372099666698698752> 그래프아이콘
+    // <:__:1371226678478770276> 시례아이콘
 
 
 
