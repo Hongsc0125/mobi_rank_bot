@@ -530,6 +530,8 @@ function setupInteractionHandlers(client) {
                     try {
                         // 웹 서버를 통해 접근할 수 있는 이미지 URL 생성
                         const webImageUrl = `http://${process.env.SERVER_IP}:${process.env.WEB_PORT}/images/deep/${formData.deep_image}`;
+
+                        console.log(`심층 제보 알림 URL: ${webImageUrl}`)
                         
                         // 알림 받을 사용자 목록 조회
                         const alertUsers = await getDeepAlertUsers(formData.deep_ch_id);
