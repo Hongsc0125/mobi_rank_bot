@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
-const fetch = require('node-fetch');
+const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 const { kadanSequelize } = require('../db/session');
 const { DateTime } = require('luxon');
 const { 
@@ -91,14 +91,12 @@ async function isDeepChannel(channelId) {
 async function downloadImage(url, localPath) {
     try {
         const response = await fetch(url);
-
         if (!response.ok) {
             throw new Error(`요청 실패: 상태 코드 ${response.status}`);
         }
 
         const buffer = await response.buffer();
-        
-        // 파일 크기 확인 (0바이트 방지)
+
         if (buffer.length === 0) {
             throw new Error('다운로드된 파일이 0바이트입니다.');
         }
@@ -106,7 +104,6 @@ async function downloadImage(url, localPath) {
         fs.writeFileSync(localPath, buffer);
         return;
     } catch (error) {
-        // 실패한 경우 기존 파일이 있으면 삭제
         if (fs.existsSync(localPath)) {
             fs.unlinkSync(localPath);
         }
