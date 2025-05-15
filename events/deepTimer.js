@@ -94,11 +94,9 @@ async function updateDeepReports(client) {
         // 안내 메시지 내용 (현재 시간 포함)
         const currentTime = now.toFormat('a h:mm').replace('AM', '오전').replace('PM', '오후');
         const guideMessage = `# 심층 제보 등록 방법
-> 1. 심층 이미지를 채팅창에 업로드하세요
+> 1. 심층이 찍힌 이미지를 채팅창에 업로드하세요
 > 2. 잠시 기다리면 나타나는 등록양식에 맵 위치 및 잔여 시간을 입력하세요
-> 3. 심층이 사라지거나 오류가 발견되면 신고 버튼을 눌러주세요
-
-업데이트: **${currentTime}**`;
+> 3. 심층이 사라지거나 오류가 발견되면 신고 버튼을 눌러주세요`;
         
         // 각 채널별 처리
         for (const channel of deepChannels) {
