@@ -385,6 +385,43 @@ function setupInteractionHandlers(client) {
             // 맵 선택 시
             if (customId.startsWith('map_select_')) {
                 const selectedMap = interaction.values[0];
+                
+                // 현재 시간(Unix 타임스탬프, 초 단위)
+                const currentTimestamp = Math.floor(Date.now() / 1000);
+                
+                // 현재 채널에서 활성화된 심층 제보 확인
+                const activeReports = await getActiveDeepReports(interaction.channelId, currentTimestamp);
+                
+                // 선택한 맵에 이미 활성화된 제보가 있는지 확인
+                const hasDuplicate = activeReports.some(report => 
+                    report.deep_type === selectedMap && !report.is_expired && report.is_error !== 'Y'
+                );
+                
+                if (hasDuplicate) {
+                    // 중복 제보가 있는 경우 경고 메시지 표시
+                    await interaction.update({
+                        content: `이미 ${selectedMap}에 활성화된 심층 제보가 있습니다. 다른 맵을 선택하거나, 시간이 지난 후 다시 시도해주세요.`,
+                        components: []
+                    });
+                    
+                    // 3초 후 메시지 삭제
+                    setTimeout(async () => {
+                        try {
+                            // 원본 이미지와 안내 메시지 삭제
+                            await formData.originalMessage.delete().catch(e => console.log('원본 메시지 삭제 실패:', e.message));
+                            await formData.replyMessage.delete().catch(e => console.log('안내 메시지 삭제 실패:', e.message));
+                            
+                            // 폼 데이터 제거
+                            deepSubmissions.delete(messageId);
+                        } catch (error) {
+                            console.error('메시지 정리 중 오류:', error);
+                        }
+                    }, 3000);
+                    
+                    return;
+                }
+                
+                // 중복이 없는 경우 맵 선택 처리
                 formData.deep_type = selectedMap;
                 // 피드백 없이 무응답
                 await interaction.deferUpdate();
@@ -440,6 +477,31 @@ function setupInteractionHandlers(client) {
                         content: '남은 시간을 입력해주세요.', 
                         ephemeral: true 
                     }).catch(() => {});
+                    return;
+                }
+                
+                // 등록 완료 시점에 다시 한번 중복 제보 확인
+                const currentTimestamp = Math.floor(Date.now() / 1000);
+                const activeReports = await getActiveDeepReports(interaction.channelId, currentTimestamp);
+                
+                // 선택한 맵에 이미 활성화된 제보가 있는지 확인
+                const hasDuplicate = activeReports.some(report => 
+                    report.deep_type === formData.deep_type && !report.is_expired && report.is_error !== 'Y'
+                );
+                
+                if (hasDuplicate) {
+                    // 중복 제보가 있는 경우 경고 메시지 표시
+                    await interaction.followUp({ 
+                        content: `이미 ${formData.deep_type}에 활성화된 심층 제보가 있습니다. 현재 제보가 취소되었습니다.`, 
+                        ephemeral: true 
+                    }).catch(() => {});
+                    
+                    // 원본 이미지와 등록 폼 즉시 삭제
+                    await formData.replyMessage.delete().catch(e => console.log('등록 폼 삭제 실패:', e.message));
+                    await formData.originalMessage.delete().catch(e => console.log('원본 메시지 삭제 실패:', e.message));
+                    
+                    // 폼 데이터 제거
+                    deepSubmissions.delete(messageId);
                     return;
                 }
                 
@@ -841,6 +903,41 @@ module.exports = {
                     content: `<@${message.author.id}> 심층 제보를 위해서는 이미지 파일만 첨부해주세요.`
                 });
                 setTimeout(() => reply.delete().catch(console.error), 3000);
+                return;
+            }
+            
+            // 현재 시간(Unix 타임스탬프, 초 단위)
+            const currentTimestamp = Math.floor(Date.now() / 1000);
+            
+            // 현재 채널에서 활성화된 심층 제보 확인
+            const activeReports = await getActiveDeepReports(message.channel.id, currentTimestamp);
+            
+            // 활성화된 심층 제보 중에서 여신의뜰과 얼음협곡 각각 중복 여부 확인
+            const activeGarden = activeReports.find(report => 
+                report.deep_type === '여신의뜰' && !report.is_expired && report.is_error !== 'Y'
+            );
+            
+            const activeIce = activeReports.find(report => 
+                report.deep_type === '얼음협곡' && !report.is_expired && report.is_error !== 'Y'
+            );
+            
+            // 중복 제보 확인 메시지 준비
+            let duplicateMessage = '';
+            if (activeGarden && activeIce) {
+                duplicateMessage = '현재 여신의뜰과 얼음협곡 모두 활성화된 심층 제보가 있습니다. 시간이 지난 후 다시 시도해주세요.';
+            } else if (activeGarden) {
+                duplicateMessage = '현재 여신의뜰에 활성화된 심층 제보가 있습니다. 다른 지역을 선택하거나, 시간이 지난 후 다시 시도해주세요.';
+            } else if (activeIce) {
+                duplicateMessage = '현재 얼음협곡에 활성화된 심층 제보가 있습니다. 다른 지역을 선택하거나, 시간이 지난 후 다시 시도해주세요.';
+            }
+            
+            // 중복된 제보가 있으면 메시지 삭제 및 안내
+            if (duplicateMessage) {
+                await message.delete().catch(console.error);
+                const reply = await message.channel.send({
+                    content: `<@${message.author.id}> ${duplicateMessage}`
+                });
+                setTimeout(() => reply.delete().catch(console.error), 5000);
                 return;
             }
 
