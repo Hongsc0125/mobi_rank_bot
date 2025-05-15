@@ -518,11 +518,15 @@ function setupInteractionHandlers(client) {
                 await formData.originalMessage.delete().catch(e => console.log('원본 메시지 삭제 실패:', e.message));
                 
                 try {
-                    // 이미지 다운로드
+                    // 이미지가 업로드 시점에 저장되었으므로 추가로 저장할 필요 없음
                     const localImagePath = path.join(DEEP_IMAGES_DIR, formData.deep_image);
                     
-                    await downloadImage(formData.image_url, localImagePath);
-                    console.log(`이미지 저장 완료: ${localImagePath}`);
+                    // 이미지 파일이 있는지 확인
+                    if (!fs.existsSync(localImagePath)) {
+                        throw new Error(`이미지 파일을 찾을 수 없습니다: ${formData.deep_image}`);
+                    }
+                    
+                    console.log(`저장된 이미지 파일 확인 완료: ${localImagePath}`);
                     
                     // 데이터베이스에 저장
                     // DB에 저장하고 반환된 deep_id 가져오기
@@ -921,6 +925,21 @@ module.exports = {
             const fileExtension = path.extname(attachment.name) || '.png';
             const timestamp = Date.now();
             const imageFileName = `deep_${message.author.id}_${timestamp}${fileExtension}`;
+            const localPath = path.join(DEEP_IMAGES_DIR, imageFileName);
+            
+            // 업로드 시점에 이미지 바로 다운로드
+            try {
+                await downloadImage(attachment.url, localPath);
+                console.log(`✅ 이미지 업로드 시 저장 성공: ${localPath}`);
+            } catch (error) {
+                console.error(`❌ 이미지 업로드 시 저장 실패:`, error.message);
+                await message.delete().catch(console.error);
+                const reply = await message.channel.send({
+                    content: `<@${message.author.id}> 이미지 처리 중 오류가 발생했습니다. 다시 시도해주세요.`
+                });
+                setTimeout(() => reply.delete().catch(console.error), 5000);
+                return;
+            }
             
             // 심층 제보 입력 폼
             const headerText = `## 심층 제보\n> 심층 제보에 대한 자세한 정보를 입력해주세요.`;
