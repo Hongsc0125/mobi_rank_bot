@@ -406,10 +406,15 @@ function setupInteractionHandlers(client) {
                 );
                 
                 if (hasDuplicate) {
-                    // 중복 제보가 있는 경우 경고 메시지 표시
+                    // 중복 제보가 있는 경우 경고 메시지 표시 - 컴포넌트 V2 형식으로 변경
+                    const warningContainer = new ContainerBuilder()
+                        .addTextDisplayComponents(
+                            new TextDisplayBuilder().setContent(`## 중복 제보 발견\n이미 ${selectedMap}에 활성화된 심층 제보가 있습니다. 다른 맵을 선택하거나, 시간이 지난 후 다시 시도해주세요.`)
+                        );
+                    
                     await interaction.update({
-                        content: `이미 ${selectedMap}에 활성화된 심층 제보가 있습니다. 다른 맵을 선택하거나, 시간이 지난 후 다시 시도해주세요.`,
-                        components: []
+                        components: [warningContainer],
+                        flags: MessageFlags.IsComponentsV2
                     });
                     
                     // 3초 후 메시지 삭제
