@@ -836,31 +836,40 @@ function setupInteractionHandlers(client) {
                 await interaction.reply({ 
                     components: [confirmContainer],
                     flags: MessageFlags.IsComponentsV2,
-                    ephemeral: true
+                    ephemeral: false
                 });
                 console.log(`심층 제보 신고 접수: ${deepId}, 신고자: ${reportUserName}(${reportUserId})`);
 
-                // --- 오제보 버튼 즉시 반영 ---
-                // deep_id로부터 채널ID 조회 후 버튼 업데이트
                 try {
-                    // 1. deep_id로 해당 제보 정보 조회
-                    const [deepRows] = await kadanSequelize.query(
-                        `SELECT deep_ch_id FROM informant_deep_user WHERE deep_id = :deep_id`,
-                        { replacements: { deep_id: deepId } }
-                    );
-                    if (deepRows && deepRows.length > 0) {
-                        const deep_ch_id = deepRows[0].deep_ch_id;
-                        // 2. 해당 채널 객체 가져오기
-                        const channel = await interaction.client.channels.fetch(deep_ch_id).catch(() => null);
-                        if (channel) {
-                            // 3. 최신 제보 상태 조회 후 버튼 업데이트
-                            const now = Math.floor(Date.now() / 1000);
-                            const reports = await getActiveDeepReports(deep_ch_id, now);
-                            await updateReportButtons(channel, reports);
+                    // 기존 메시지에서 섹션/이미지 등은 유지, 버튼만 오제보로 변경
+                    const oldContainer = interaction.message.components?.[0];
+                    const newContainer = new ContainerBuilder();
+
+                    // 기존 텍스트/섹션/이미지 등 복원 (최소한 섹션/썸네일/텍스트 유지)
+                    if (oldContainer && oldContainer.components) {
+                        for (const comp of oldContainer.components) {
+                            // 버튼이 아닌 것만 복사
+                            if (comp.type !== 2) {
+                                newContainer.addComponents(comp);
+                            }
                         }
                     }
+                    // 오제보 버튼 추가 (비활성화, Danger)
+                    newContainer.addActionRowComponents(
+                        new ActionRowBuilder().addComponents(
+                            new ButtonBuilder()
+                                .setCustomId(`deep_report_${deepId}`)
+                                .setLabel('오제보')
+                                .setStyle(ButtonStyle.Danger)
+                                .setDisabled(true)
+                        )
+                    );
+                    await interaction.message.edit({
+                        components: [newContainer],
+                        flags: MessageFlags.IsComponentsV2
+                    });
                 } catch (err) {
-                    console.error('오제보 버튼 즉시 반영 실패:', err);
+                    console.error('오제보 버튼 메시지 직접 반영 실패:', err);
                 }
 
             } catch (error) {
