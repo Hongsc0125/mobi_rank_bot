@@ -825,14 +825,44 @@ function setupInteractionHandlers(client) {
                     type: kadanSequelize.QueryTypes.UPDATE
                 });
                 
-                // 신고 성공 응답
+                // 신고 성공 안내 (컴포넌트 V2)
+                const confirmContainer = new ContainerBuilder()
+                    .addTextDisplayComponents(
+                        new TextDisplayBuilder().setContent(
+                            `# 🚨 심층 제보 신고 접수 완료\n` +
+                            `제보번호 : ${deepId}\n관리자가 확인 후 조치하게 됩니다.`
+                        )
+                    );
                 await interaction.reply({ 
-                    content: `심층 제보 신고가 접수되었습니다. 관리자가 확인 후 조치하게 됩니다. 신고번호: ${deepId}`,
+                    components: [confirmContainer],
+                    flags: MessageFlags.IsComponentsV2,
                     ephemeral: true
                 });
-                
                 console.log(`심층 제보 신고 접수: ${deepId}, 신고자: ${reportUserName}(${reportUserId})`);
-                
+
+                // --- 오제보 버튼 즉시 반영 ---
+                // deep_id로부터 채널ID 조회 후 버튼 업데이트
+                try {
+                    // 1. deep_id로 해당 제보 정보 조회
+                    const [deepRows] = await kadanSequelize.query(
+                        `SELECT deep_ch_id FROM informant_deep_user WHERE deep_id = :deep_id`,
+                        { replacements: { deep_id: deepId } }
+                    );
+                    if (deepRows && deepRows.length > 0) {
+                        const deep_ch_id = deepRows[0].deep_ch_id;
+                        // 2. 해당 채널 객체 가져오기
+                        const channel = await interaction.client.channels.fetch(deep_ch_id).catch(() => null);
+                        if (channel) {
+                            // 3. 최신 제보 상태 조회 후 버튼 업데이트
+                            const now = Math.floor(Date.now() / 1000);
+                            const reports = await getActiveDeepReports(deep_ch_id, now);
+                            await updateReportButtons(channel, reports);
+                        }
+                    }
+                } catch (err) {
+                    console.error('오제보 버튼 즉시 반영 실패:', err);
+                }
+
             } catch (error) {
                 console.error('심층 제보 신고 처리 중 오류:', error);
                 
