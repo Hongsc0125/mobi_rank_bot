@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, ContainerBuilder, TextDisplayBuilder, SeparatorBuilder, SeparatorSpacingSize } = require('discord.js');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -32,7 +32,6 @@ module.exports = {
         const nextTimeStr = nextTime.toLocaleString('ko-KR', { hour12: false });
 
         // 안내문(컴포넌트 V2)
-        const { ContainerBuilder, TextDisplayBuilder, SeparatorBuilder, SeparatorSpacingSize } = require('../../utils/componentsV2');
         const header = `## 심층구멍 탐색 완료 안내`;
         const desc = `> **${map}**의 심층구멍 탐색이 완료되었습니다.\n> 다음 구멍 생성 예상 시간: **${nextTimeStr}**\n> (남은 ${remainMin}분)`;
         const footer = `## ⚠️ 안내사항\n> • ${nextTimeStr} 이전에는 심층구멍이 없습니다.\n> • 시간 전까지는 제보를 삼가주세요.`;
