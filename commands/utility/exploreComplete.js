@@ -29,20 +29,20 @@ module.exports = {
         // 다음 생성 예상 시간 계산
         const now = new Date();
         const nextTime = new Date(now.getTime() + remainMin * 60000);
-        const nextTimeStr = nextTime.toLocaleString('ko-KR', { hour12: false });
+        // 시:분만 추출
+        const nextHour = String(nextTime.getHours()).padStart(2, '0');
+        const nextMin = String(nextTime.getMinutes()).padStart(2, '0');
+        const nextTimeStr = `${nextHour}:${nextMin}`;
 
         // 안내문(컴포넌트 V2)
         const userName = interaction.user?.displayName || interaction.user?.username || '유저';
         
-        const header = `\`${userName}\`님이 \`${map}\` 탐색을 완료했습니다.`;
-        const desc = `> \`${map}\`의 심층구멍 탐색이 완료되었습니다.\n> 다음 구멍 생성 예상 시간: \`${nextTimeStr}\`\n> (남은 \`${remainMin}분\`)`;
-        const footer = `## ⚠️ 안내사항\n> • \`${nextTimeStr}\` 이전에는 심층구멍이 없는걸 확인했습니다.`;
+        const header = `## \`${userName}\`님이 \`${map}\` 탐색을 완료했습니다.`;
+        const desc = `> \`${map}\`의 심층구멍 탐색이 완료되었습니다.\n> 다음 구멍 생성 예상 시간: \`${nextTimeStr}\`\n> (남은시간 약 \`${remainMin}분\`)`;
+        const footer = `# ⚠️ \`${nextTimeStr}\` 이전에는 심층구멍이 없는걸 확인했습니다.`;
         const container = new ContainerBuilder()
             .addTextDisplayComponents(
                 new TextDisplayBuilder().setContent(header)
-            )
-            .addSeparatorComponents(
-                new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Large).setDivider(true)
             )
             .addTextDisplayComponents(
                 new TextDisplayBuilder().setContent(desc)
