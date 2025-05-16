@@ -39,7 +39,7 @@ module.exports = {
         
         const header = `## \`${userName}\`님이 \`${map}\` 탐색을 완료했습니다.`;
         const desc = `> \`${map}\`의 심층구멍 탐색이 완료되었습니다.\n> 다음 구멍 생성 예상 시간: \`${nextTimeStr}\`\n> (남은시간 약 \`${remainMin}분\`)`;
-        const footer = `# ⚠️ \`${nextTimeStr}\` 이전에는 심층구멍이 없는걸 확인했습니다.`;
+        const footer = `## ⚠️ \`${nextTimeStr}\` 이전에는 심층구멍이 없는걸 확인했습니다.`;
         const container = new ContainerBuilder()
             .addTextDisplayComponents(
                 new TextDisplayBuilder().setContent(header)
