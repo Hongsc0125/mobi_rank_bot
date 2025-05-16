@@ -326,6 +326,42 @@ async function updateReportButtons(channel, reports) {
                 // 변경된 컴포넌트로 메시지 업데이트
                 await message.edit({ components: updatedComponents });
                 console.log(`심층 제보 ${deepId} 버튼 상태 업데이트 성공: ${matchedReport.status}`);
+                
+                // --- 오제보 버튼 즉시 반영 (해당 메시지 컴포넌트만 직접 update) ---
+                try {
+                    const oldContainer = message.components?.[0];
+                    const newContainer = new ContainerBuilder();
+
+                    // 기존 텍스트/섹션/이미지 등 복원 (타입별로 분기)
+                    if (oldContainer && oldContainer.components) {
+                        for (const comp of oldContainer.components) {
+                            if (comp.type === 4) { // TEXT_DISPLAY
+                                newContainer.addTextDisplayComponents(comp);
+                            } else if (comp.type === 5) { // SEPARATOR
+                                newContainer.addSeparatorComponents(comp);
+                            } else if (comp.type === 6) { // MEDIA_GALLERY
+                                newContainer.addMediaGalleryComponents(comp);
+                            } else if (comp.type === 7) { // SECTION
+                                newContainer.addSectionComponents(comp);
+                            }
+                            // 버튼(ActionRow)은 복원하지 않음, 아래에서 오제보 버튼만 새로 추가
+                        }
+                    }
+                    // 오제보 버튼만 별도 추가 (ActionRowBuilder로 감싸기)
+                    const wrongButton = new ButtonBuilder()
+                        .setCustomId(`deep_report_${deepId}`)
+                        .setLabel('오제보')
+                        .setStyle(ButtonStyle.Danger)
+                        .setDisabled(true);
+                    const actionRow = new ActionRowBuilder().addComponents(wrongButton);
+                    newContainer.addActionRowComponents(actionRow);
+                    await message.edit({
+                        components: [newContainer],
+                        flags: MessageFlags.IsComponentsV2
+                    });
+                } catch (err) {
+                    console.error('오제보 버튼 메시지 직접 반영 실패:', err);
+                }
             } catch (updateError) {
                 console.error(`버튼 상태 업데이트 실패 (${deepId}):`, updateError.message);
             }
@@ -838,32 +874,35 @@ function setupInteractionHandlers(client) {
                     flags: MessageFlags.IsComponentsV2,
                     ephemeral: false
                 });
-                console.log(`심층 제보 신고 접수: ${deepId}, 신고자: ${reportUserName}(${reportUserId})`);
 
+                // --- 오제보 버튼 즉시 반영 (해당 메시지 컴포넌트만 직접 update) ---
                 try {
-                    // 기존 메시지에서 섹션/이미지 등은 유지, 버튼만 오제보로 변경
                     const oldContainer = interaction.message.components?.[0];
                     const newContainer = new ContainerBuilder();
 
-                    // 기존 텍스트/섹션/이미지 등 복원 (최소한 섹션/썸네일/텍스트 유지)
+                    // 기존 텍스트/섹션/이미지 등 복원 (타입별로 분기)
                     if (oldContainer && oldContainer.components) {
                         for (const comp of oldContainer.components) {
-                            // 버튼이 아닌 것만 복사
-                            if (comp.type !== 2) {
-                                newContainer.addComponents(comp);
+                            if (comp.type === 4) { // TEXT_DISPLAY
+                                newContainer.addTextDisplayComponents(comp);
+                            } else if (comp.type === 5) { // SEPARATOR
+                                newContainer.addSeparatorComponents(comp);
+                            } else if (comp.type === 6) { // MEDIA_GALLERY
+                                newContainer.addMediaGalleryComponents(comp);
+                            } else if (comp.type === 7) { // SECTION
+                                newContainer.addSectionComponents(comp);
                             }
+                            // 버튼(ActionRow)은 복원하지 않음, 아래에서 오제보 버튼만 새로 추가
                         }
                     }
-                    // 오제보 버튼 추가 (비활성화, Danger)
-                    newContainer.addActionRowComponents(
-                        new ActionRowBuilder().addComponents(
-                            new ButtonBuilder()
-                                .setCustomId(`deep_report_${deepId}`)
-                                .setLabel('오제보')
-                                .setStyle(ButtonStyle.Danger)
-                                .setDisabled(true)
-                        )
-                    );
+                    // 오제보 버튼만 별도 추가 (ActionRowBuilder로 감싸기)
+                    const wrongButton = new ButtonBuilder()
+                        .setCustomId(`deep_report_${deepId}`)
+                        .setLabel('오제보')
+                        .setStyle(ButtonStyle.Danger)
+                        .setDisabled(true);
+                    const actionRow = new ActionRowBuilder().addComponents(wrongButton);
+                    newContainer.addActionRowComponents(actionRow);
                     await interaction.message.edit({
                         components: [newContainer],
                         flags: MessageFlags.IsComponentsV2
@@ -871,7 +910,6 @@ function setupInteractionHandlers(client) {
                 } catch (err) {
                     console.error('오제보 버튼 메시지 직접 반영 실패:', err);
                 }
-
             } catch (error) {
                 console.error('심층 제보 신고 처리 중 오류:', error);
                 
