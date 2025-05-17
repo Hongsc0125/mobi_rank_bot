@@ -23,7 +23,7 @@ module.exports = {
     try {
       await interaction.deferReply({ content: '직업별 인구 통계 조회중입니다... (최대 60초까지 소요될 수 있습니다)', flags: MessageFlags.IsComponentsV2 });
 
-      const response = await axios.get('https://thorough-possibly-zebra.ngrok-free.app/force-class-chart', {
+      const response = await axios.get('https://thorough-possibly-zebra.ngrok-free.app/class-chart', {
         timeout: 60000
       });
 
