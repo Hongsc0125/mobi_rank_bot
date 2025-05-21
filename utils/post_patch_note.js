@@ -334,6 +334,15 @@ async function processAndSendContent(thread, contentHtml, options = {}) {
           
           // 테이블 HTML을 이미지로 변환
           const html = node.outerHTML;
+          // 테이블 HTML 구조 로깅
+          // logger.info(`[패치노트] 테이블 HTML 구조: ${html.substring(0, 500)}...`);
+          
+          // tr, td 요소 확인
+          const dom = new JSDOM(html);
+          const trCount = dom.window.document.querySelectorAll('tr').length;
+          const tdCount = dom.window.document.querySelectorAll('td').length;
+          // logger.info(`[패치노트] 테이블 구조 분석: tr 개수=${trCount}, td 개수=${tdCount}`);
+          
           const imageUrl = await htmlTableToImageBuffer(html);
           
           if (imageUrl) {
@@ -479,6 +488,9 @@ async function processAndSendContent(thread, contentHtml, options = {}) {
 
 // HTML 테이블을 이미지로 변환하는 함수
 async function htmlTableToImageBuffer(html) {
+  // HTML 구조 전처리 - 빈 테이블 셀 처리 및 테이블 구조 보정
+  const processedHtml = html.replace(/<td[^>]*>\s*<\/td>/g, '<td>&nbsp;</td>');
+  
   const browser = await puppeteer.launch({
     headless: 'new',
     args: ['--no-sandbox', '--disable-setuid-sandbox']
@@ -486,24 +498,29 @@ async function htmlTableToImageBuffer(html) {
   
   const page = await browser.newPage();
   
-  // 기본 스타일이 적용된 HTML 템플릿 설정
+  // 기본 스타일이 적용된 HTML 템플릿 설정 - 좀 더 강화된 스타일링
   const htmlTemplate = `
     <!DOCTYPE html>
     <html>
     <head>
+      <meta charset="UTF-8">
       <style>
         body { font-family: 'Noto Sans KR', sans-serif; background-color: white; padding: 20px; }
-        table { border-collapse: collapse; width: 100%; max-width: 800px; margin: 0 auto; }
-        td, th { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        table { border-collapse: collapse; width: 100%; max-width: 800px; margin: 0 auto; table-layout: fixed; }
+        table, td, th { border: 1px solid #ddd; }
+        td, th { padding: 8px; text-align: center; word-break: break-word; }
         th { background-color: #333; color: white; }
         tr:nth-child(even) { background-color: #f2f2f2; }
+        td:empty { padding: 8px; }
       </style>
     </head>
     <body>
-      ${html}
+      ${processedHtml}
     </body>
     </html>
   `;
+  
+  logger.info(`[패치노트] 처리된 테이블 HTML 템플릿: ${htmlTemplate.substring(0, 300)}...`);
   
   await page.setContent(htmlTemplate);
   
@@ -527,10 +544,6 @@ async function htmlTableToImageBuffer(html) {
     const uniqueId = Date.now() + '_' + Math.floor(Math.random()*10000);
     const fileName = `table_${uniqueId}.png`;
     const filePath = path.join(imagesDir, fileName);
-    
-    logger.info(`⛔ __dirname: ${__dirname}`);
-    logger.info(`⛔ process.cwd(): ${process.cwd()}`);
-    logger.info(`⛔ imagesDir: ${imagesDir}`);
 
     // 버퍼 저장
     fs.writeFileSync(filePath, imageBuffer);
