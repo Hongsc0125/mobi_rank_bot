@@ -518,7 +518,7 @@ async function htmlTableToImageBuffer(html) {
   
   try {
     // 이미지 저장 및 URL 생성
-    const imagesDir = path.join(__dirname, '../public/images/patch_note');
+    const imagesDir = path.join(__dirname, '../images/patch_note');
     if (!fs.existsSync(imagesDir)) {
       logger.info(`[패치노트] patch_note 디렉토리 생성: ${imagesDir}`);
       fs.mkdirSync(imagesDir, { recursive: true });
