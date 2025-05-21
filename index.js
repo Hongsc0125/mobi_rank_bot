@@ -3,6 +3,7 @@ require('dotenv').config();
 
 // Discord.js 관련 모듈 임포트
 const { Client, GatewayIntentBits, Collection, Events } = require('discord.js');
+const { sendDiscordMessage, sendSimpleEmbedMessage } = require('./utils/post_patch_note');
 const fs = require('fs');
 const path = require('path');
 
@@ -11,7 +12,7 @@ const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent  // 메시지 첨부파일을 감지하려면 필요합니다
+    GatewayIntentBits.MessageContent
   ]
 });
 
@@ -110,3 +111,19 @@ client.login(process.env.DISCORD_TOKEN)
 process.on('unhandledRejection', error => {
   console.error('처리되지 않은 프로미스 거부:', error);
 });
+
+
+async function sendToChannel() {
+  return await sendDiscordMessage(client);
+}
+
+// 테스트용 임베드 전송 함수 추가
+async function sendToChannelTest() {
+  return await sendSimpleEmbedMessage(client);
+}
+
+module.exports = {
+  client,
+  sendToChannel,
+  sendToChannelTest // 테스트 함수 내보내기
+};
