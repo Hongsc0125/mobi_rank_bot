@@ -528,6 +528,10 @@ async function htmlTableToImageBuffer(html) {
     const fileName = `table_${uniqueId}.png`;
     const filePath = path.join(imagesDir, fileName);
     
+    logger.info('⛔ __dirname:', __dirname);
+    logger.info('⛔ process.cwd():', process.cwd());
+    logger.info('⛔ imagesDir:', imagesDir);
+
     // 버퍼 저장
     fs.writeFileSync(filePath, imageBuffer);
     logger.info(`[패치노트] 테이블 이미지 저장 성공: ${filePath}`);
