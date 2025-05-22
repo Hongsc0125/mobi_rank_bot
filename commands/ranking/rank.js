@@ -295,12 +295,12 @@ module.exports = {
 
     // 
     
-    // 직업 이름에서 띄어쓰기 제거 (예: '견습 힐러' -> '견습힐러')
-    const classNameWithoutSpace = className.replace(/\s+/g, '');
+    // 직업 이름에서 '견습 ' 제거 (예: '견습 힐러' -> '힐러')
+    const classNameWithoutSpace = className.replace(/견습\s+/g, '');
     
     const section = new SectionBuilder()
     .setThumbnailAccessory(
-      new ThumbnailBuilder().setURL(`http://${process.env.SERVER_IP}:${process.env.WEB_PORT}/images/mini_character/${classNameWithoutSpace}.png`)
+      new ThumbnailBuilder().setURL(`http://${process.env.SERVER_IP}:${process.env.WEB_PORT}/images/class_icon/${classNameWithoutSpace}.png`)
     )
     .addTextDisplayComponents(
         new TextDisplayBuilder().setContent(`### <:__:1371226603702583486> 전투력 : ${combatPower}\n> ${combatRank}\n> \`${combatEmoji}${Math.abs(combatChange).toLocaleString('ko-KR')}\`\n`
