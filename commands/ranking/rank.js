@@ -145,11 +145,13 @@ module.exports = {
         logger.error(`DB 오류: ${e.message}`);
       }
 
+      const url = settings.RANK_API_URL + '/search';
+
       // data 객체가 비어있는지 확인 (Object.keys를 사용하여 정확하게 체크)
       if (Object.keys(data).length === 0) {
         try {
           const res = await axios.post(
-            settings.RANK_API_URL,
+            url,
             { server, character },
             { timeout: 60000 }
           );

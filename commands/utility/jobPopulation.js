@@ -14,6 +14,8 @@ const axios = require('axios');
 const { logger } = require('../../db/session');
 const settings = require('../../core/config');
 
+const rankUrl = settings.RANK_API_URL;
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('직업별인구')
@@ -23,7 +25,9 @@ module.exports = {
     try {
       await interaction.deferReply({ content: '직업별 인구 통계 조회중입니다... (최대 60초까지 소요될 수 있습니다)', flags: MessageFlags.IsComponentsV2 });
 
-      const response = await axios.get('https://thorough-possibly-zebra.ngrok-free.app/class-chart', {
+      const charUrl = rankUrl + '/class-chart';
+
+      const response = await axios.get(charUrl, {
         timeout: 60000
       });
 
@@ -60,8 +64,8 @@ module.exports = {
       const footerText = `⏱️ *마지막 업데이트: ${timestamp}*`;
 
       // 그래프/테이블 이미지 URL 변수 생성
-      const graphImageUrl = `https://thorough-possibly-zebra.ngrok-free.app${chartImageUrl}`;
-      const tableImgUrl = `https://thorough-possibly-zebra.ngrok-free.app${tableImageUrl}`;
+      const graphImageUrl = `${rankUrl}${chartImageUrl}`;
+      const tableImgUrl = `${rankUrl}${tableImageUrl}`;
       
       // 데이터 로그 출력
       console.log('=== 직업별 인구 명령어 로그 ===');

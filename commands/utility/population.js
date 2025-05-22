@@ -14,6 +14,7 @@ const path = require('path');
 const axios = require('axios');
 const { logger } = require('../../db/session');
 const settings = require('../../core/config');
+const rankUrl = settings.RANK_API_URL;
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -26,7 +27,7 @@ module.exports = {
       await interaction.deferReply({ content: '실시간 인구 통계 조회중입니다... (최대 60초까지 소요될 수 있습니다)', flags: MessageFlags.IsComponentsV2 });
 
       // API에서 인구 데이터 조회
-      const response = await axios.get('https://thorough-possibly-zebra.ngrok-free.app/population', {
+      const response = await axios.get(rankUrl + '/population', {
         timeout: 60000
       });
 
@@ -60,8 +61,9 @@ module.exports = {
 
 
       // 그래프 이미지 URL 변수 생성
-      const graphImageUrl = `https://thorough-possibly-zebra.ngrok-free.app${imageUrl}`;
-      
+      const graphImageUrl = `${rankUrl}${imageUrl}`;
+      // const graphImageUrl = `https://thorough-possibly-zebra.ngrok-free.app${imageUrl}`;
+
       // 데이터 로그 출력
       console.log('=== 인구 명령어 로그 ===');
       console.log('✨ 서버 이미지 URL:', titleImage);
