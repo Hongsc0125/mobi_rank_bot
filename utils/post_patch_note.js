@@ -87,11 +87,12 @@ try {
         const title = patchData.title || `패치노트 ${new Date().toLocaleString('ko-KR')}`;
         const post_date = patchData.post_date || new Date().toLocaleString('ko-KR');
         
-        // 이미 같은 제목의 쓰레드가 있는지 확인
-        const existingThread = existingThreads.find(thread => 
-          thread.name.toLowerCase().includes(title.toLowerCase()) || 
-          title.toLowerCase().includes(thread.name.toLowerCase())
-        );
+        // 정확히 같은 제목의 쓰레드가 있는지 확인 (공백 제거 후 비교)
+        const normalizedTitle = title.replace(/\s+/g, '').toLowerCase();
+        const existingThread = existingThreads.find(thread => {
+          const normalizedThreadName = thread.name.replace(/\s+/g, '').toLowerCase();
+          return normalizedThreadName === normalizedTitle;
+        });
         
         if (existingThread) {
           logger.info(`[패치노트] 이미 생성된 쓰레드가 있습니다: ${existingThread.name} (ID: ${existingThread.id})`);
