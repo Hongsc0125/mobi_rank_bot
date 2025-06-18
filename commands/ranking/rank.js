@@ -153,13 +153,13 @@ module.exports = {
           const res = await axios.post(
             url,
             { server, character },
-            { timeout: 60000 }
+            { timeout: 120000 }
           );
           if (res.data.success) {
             // API 응답 로깅
             logger.info(`API 응답: ${JSON.stringify(res.data)}`);
             
-            // API에서 응답을 받아 파싱 (2025.05.12 기준 최신 형식)
+            // API에서 응답을 받아 파싱
             const apiData = res.data.character;
             const rankings = apiData.rankings || {};
             
