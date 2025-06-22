@@ -664,6 +664,8 @@ function setupInteractionHandlers(client) {
                             displayMapName = '🌍 여신의뜰';
                         } else if (mapName === '얼음협곡') {
                             displayMapName = '❄️ 얼음협곡';
+                        } else if (mapName === '구름황야') {
+                            displayMapName = '☁️ 구름황야';
                         }
                         
                         // luxon으로 한국 시간 기반 시간처리
@@ -1059,6 +1061,13 @@ module.exports = {
                                         .setDescription('얼음협곡에 심층이 떳어요!')
                                         .setEmoji({
                                             name: '❄️',
+                                        }),
+                                    new StringSelectMenuOptionBuilder()
+                                        .setLabel('구름황야')
+                                        .setValue('구름황야')
+                                        .setDescription('구름황야에 심층이 떳어요!')
+                                        .setEmoji({
+                                            name: '☁️',
                                         }),
                                 ]),
                         ),
