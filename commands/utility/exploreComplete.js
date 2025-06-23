@@ -10,7 +10,8 @@ module.exports = {
                 .setRequired(true)
                 .addChoices(
                     { name: '여신의뜰', value: '여신의뜰' },
-                    { name: '얼음협곡', value: '얼음협곡' }
+                    { name: '얼음협곡', value: '얼음협곡' },
+                    { name: '구름황야', value: '구름황야' }
                 )
         )
         .addIntegerOption(option =>
