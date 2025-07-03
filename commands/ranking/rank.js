@@ -192,7 +192,7 @@ async function processRankingRequest(server, character, modalSubmit, interaction
     }
 
     // DB에 데이터가 없으면 즉시 안내 메시지 보내고 백그라운드 처리
-    await modalSubmit.followUp({
+    const loadingMessage = await modalSubmit.followUp({
       content: `🔍 **${server} 서버의 ${character}** 최신 랭킹을 조회 중입니다.\n⏱️ 조회가 완료되면 이 채널에서 ${interaction.user}님께 결과를 전송해드리겠습니다!`
     });
 
@@ -203,11 +203,12 @@ async function processRankingRequest(server, character, modalSubmit, interaction
       return;
     }
 
-    // 검색 상태 추가
+    // 검색 상태 추가 (로딩 메시지 정보 포함)
     ongoingSearches.set(searchKey, {
       userId: interaction.user.id,
       channelId: interaction.channel.id,
       guildId: interaction.guild?.id,
+      loadingMessageId: loadingMessage.id,
       startTime: Date.now()
     });
 
@@ -368,13 +369,22 @@ async function sendRankingToOriginalChannel(data, interaction, searchKey) {
     // 기존 UI 로직으로 랭킹 카드 생성
     const rankingCard = await createRankingCard(data);
     
-    // 먼저 멘션 메시지 전송
-    await channel.send({
-      content: `<@${searchInfo.userId}> 🎉 **${data.server_name || data.server} 서버의 ${data.character_name || data.character}** 랭킹 조회가 완료되었습니다!`
-    });
+    // 로딩 메시지 삭제
+    try {
+      if (searchInfo.loadingMessageId) {
+        const loadingMessage = await channel.messages.fetch(searchInfo.loadingMessageId);
+        await loadingMessage.delete();
+        logger.info(`로딩 메시지 삭제 완료: ${searchInfo.loadingMessageId}`);
+      }
+    } catch (error) {
+      logger.error('로딩 메시지 삭제 중 오류:', error.message);
+    }
     
-    // 그 다음 랭킹 카드 전송
-    await channel.send(rankingCard);
+    // 멘션과 함께 랭킹 카드 전송
+    await channel.send({
+      content: `<@${searchInfo.userId}> 🎉 **${data.server_name || data.server} 서버의 ${data.character_name || data.character}** 랭킹 조회가 완료되었습니다!`,
+      ...rankingCard
+    });
     
     logger.info(`랭킹 카드 전송 완료: ${searchKey}`);
 
@@ -401,6 +411,17 @@ async function sendErrorToOriginalChannel(errorMessage, interaction, searchKey) 
       return;
     }
 
+    // 로딩 메시지 삭제
+    try {
+      if (searchInfo.loadingMessageId) {
+        const loadingMessage = await channel.messages.fetch(searchInfo.loadingMessageId);
+        await loadingMessage.delete();
+        logger.info(`로딩 메시지 삭제 완료: ${searchInfo.loadingMessageId}`);
+      }
+    } catch (error) {
+      logger.error('로딩 메시지 삭제 중 오류:', error.message);
+    }
+    
     // 오류 메시지 전송
     await channel.send({
       content: `<@${searchInfo.userId}> ❌ 랭킹 조회 실패: ${errorMessage}`
