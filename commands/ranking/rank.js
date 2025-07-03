@@ -380,11 +380,13 @@ async function sendRankingToOriginalChannel(data, interaction, searchKey) {
       logger.error('로딩 메시지 삭제 중 오류:', error.message);
     }
     
-    // 멘션과 함께 랭킹 카드 전송
+    // 먼저 멘션 메시지 전송
     await channel.send({
-      content: `<@${searchInfo.userId}> 🎉 **${data.server_name || data.server} 서버의 ${data.character_name || data.character}** 랭킹 조회가 완료되었습니다!`,
-      ...rankingCard
+      content: `<@${searchInfo.userId}> 🎉 **${data.server_name || data.server} 서버의 ${data.character_name || data.character}** 랭킹 조회가 완료되었습니다!`
     });
+    
+    // 그 다음 랭킹 카드 전송
+    await channel.send(rankingCard);
     
     logger.info(`랭킹 카드 전송 완료: ${searchKey}`);
 
