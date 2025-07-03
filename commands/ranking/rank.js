@@ -366,9 +366,14 @@ async function sendRankingToOriginalChannel(data, interaction, searchKey) {
     }
 
     // 기존 UI 로직으로 랭킹 카드 생성
-    const rankingCard = await createRankingCard(data, searchInfo.userId);
+    const rankingCard = await createRankingCard(data);
     
-    // 원래 채널에 메시지 전송
+    // 먼저 멘션 메시지 전송
+    await channel.send({
+      content: `<@${searchInfo.userId}> 🎉 **${data.server_name || data.server} 서버의 ${data.character_name || data.character}** 랭킹 조회가 완료되었습니다!`
+    });
+    
+    // 그 다음 랭킹 카드 전송
     await channel.send(rankingCard);
     
     logger.info(`랭킹 카드 전송 완료: ${searchKey}`);
@@ -409,7 +414,7 @@ async function sendErrorToOriginalChannel(errorMessage, interaction, searchKey) 
 }
 
 // 랭킹 카드 생성 (기존 UI 로직 분리)
-async function createRankingCard(data, userId) {
+async function createRankingCard(data) {
   const cardImage = 'https://harmari.duckdns.org/static/ranking_card.png';
   
   // 캐릭터 정보 추출 및 키 매핑
@@ -521,7 +526,6 @@ async function createRankingCard(data, userId) {
     );
 
   return {
-    content: `<@${userId}> 🎉 **${serverName} 서버의 ${name}** 랭킹 조회가 완료되었습니다!`,
     components: [container],
     flags: MessageFlags.IsComponentsV2
   };
@@ -531,7 +535,7 @@ async function createRankingCard(data, userId) {
 async function sendRankingResultWithOriginalUI(data, modalSubmit, user) {
   try {
     // 공통 랭킹 카드 생성 함수 사용
-    const rankingCard = await createRankingCard(data, user.id);
+    const rankingCard = await createRankingCard(data);
     
     // modalSubmit으로 응답
     await modalSubmit.followUp(rankingCard);
