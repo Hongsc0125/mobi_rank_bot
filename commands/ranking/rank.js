@@ -149,7 +149,7 @@ async function processRankingRequest(server, character, modalSubmit, interaction
             FROM mabinogi_ranking
             WHERE server_name = :server
               AND character_name = :character
-              AND retrieved_at >= NOW() - INTERVAL '15 minutes'
+              AND retrieved_at >= NOW() AT TIME ZONE 'Asia/Seoul' - INTERVAL '15 minutes'
               AND div = :div
             ORDER BY retrieved_at DESC
             LIMIT 1
@@ -165,7 +165,7 @@ async function processRankingRequest(server, character, modalSubmit, interaction
             FROM mabinogi_ranking
             WHERE server_name = :server
               AND character_name = :character
-              AND retrieved_at >= NOW() - INTERVAL '15 minutes'
+              AND retrieved_at >= NOW() AT TIME ZONE 'Asia/Seoul' - INTERVAL '15 minutes'
               AND div = :div
             ORDER BY retrieved_at DESC
             LIMIT 1
