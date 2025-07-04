@@ -16,13 +16,32 @@ const client = new Client({
   ]
 });
 
+// DB 초기화
+const { initializeRankRequests } = require('./db/init_rank_requests');
+
 // 명령어 컬렉션 설정
 client.commands = new Collection();
 
 // 준비 이벤트 핸들러
-client.on(Events.ClientReady, () => {
+client.on(Events.ClientReady, async () => {
   console.log(`${client.user.tag} 봇이 준비되었습니다! (${new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })})`);
   console.log(`서버 수: ${client.guilds.cache.size}`);
+  
+  // DB 초기화
+  await initializeRankRequests();
+  
+  // 정기적으로 오래된 요청 정리 (10분마다)
+  const RankRequest = require('./db/models/RankRequest');
+  setInterval(async () => {
+    try {
+      const cleanedCount = await RankRequest.cleanupOldRequests();
+      if (cleanedCount > 0) {
+        console.log(`🧹 ${cleanedCount}개의 오래된 랭크 요청이 정리되었습니다.`);
+      }
+    } catch (error) {
+      console.error('랭크 요청 정리 중 오류:', error);
+    }
+  }, 10 * 60 * 1000); // 10분
   
   // 등록된 명령어 목록 출력
   console.log('\n=== 등록된 명령어 목록 ===');

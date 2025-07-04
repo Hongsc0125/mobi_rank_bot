@@ -17,9 +17,9 @@ const axios = require('axios');
 const { rankSequelize, logger } = require('../../db/session');
 const settings = require('../../core/config');
 const { Sequelize } = require('sequelize');
+const RankRequest = require('../../db/models/RankRequest');
 
-// 진행 중인 작업을 추적하기 위한 Map
-const ongoingSearches = new Map();
+// DB 기반 요청 관리 (기존 Map 제거)
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -70,9 +70,10 @@ module.exports = {
         return;
       }
 
-      // 중복 요청 체크
-      const searchKey = `${server}-${character}`;
-      if (ongoingSearches.has(searchKey)) {
+      // 사용자별 중복 요청 체크 (DB 기반)
+      const userKey = `${interaction.user.id}-${server}-${character}`;
+      const existingRequest = await RankRequest.findByUserKey(userKey);
+      if (existingRequest) {
         await modalSubmit.reply({ 
           content: '⚠️ 해당 캐릭터의 조회가 이미 진행 중입니다. 잠시만 기다려주세요.', 
           ephemeral: true 
@@ -99,7 +100,22 @@ module.exports = {
 
 // DB 조회 후 즉시 응답 또는 백그라운드 처리
 async function processRankingRequest(server, character, modalSubmit, interaction) {
+  const userKey = `${interaction.user.id}-${server}-${character}`;
+  const searchKey = `${server}-${character}`;
+  
   try {
+    // 사용자 요청 정보를 DB에 저장
+    await RankRequest.create({
+      searchKey: searchKey,
+      userKey: userKey,
+      userId: interaction.user.id,
+      channelId: interaction.channel.id,
+      guildId: interaction.guild?.id,
+      serverName: server,
+      characterName: character,
+      status: 'waiting'
+    });
+
     // 3) DB에서 데이터 조회 (기존 로직)
     let data = {};
     try {
@@ -188,6 +204,8 @@ async function processRankingRequest(server, character, modalSubmit, interaction
     // DB에 데이터가 있으면 즉시 응답
     if (Object.keys(data).length > 0) {
       await sendRankingResultWithOriginalUI(data, modalSubmit, interaction.user);
+      // 요청 완료 처리
+      await RankRequest.destroy({ where: { userKey } });
       return;
     }
 
@@ -196,29 +214,37 @@ async function processRankingRequest(server, character, modalSubmit, interaction
       content: `🔍 **${server} 서버의 ${character}** 최신 랭킹을 조회 중입니다.\n⏱️ 조회가 완료되면 이 채널에서 ${interaction.user}님께 결과를 전송해드리겠습니다!`
     });
 
-    // 중복 요청 체크
-    const searchKey = `${server}-${character}`;
-    if (ongoingSearches.has(searchKey)) {
-      logger.info(`이미 진행 중인 요청: ${searchKey}`);
+    // 로딩 메시지 ID 업데이트
+    await RankRequest.update(
+      { loadingMessageId: loadingMessage.id },
+      { where: { userKey } }
+    );
+
+    // 이미 해당 캐릭터에 대한 검색이 진행 중인지 확인
+    const processingRequests = await RankRequest.findBySearchKey(searchKey);
+    const isAlreadyProcessing = processingRequests.some(req => req.status === 'processing');
+    
+    if (isAlreadyProcessing) {
+      // 이미 진행 중이면 대기 상태 유지
+      logger.info(`기존 검색에 대기자 추가: ${userKey} -> ${searchKey}`);
       return;
     }
 
-    // 검색 상태 추가 (로딩 메시지 정보 포함)
-    ongoingSearches.set(searchKey, {
-      userId: interaction.user.id,
-      channelId: interaction.channel.id,
-      guildId: interaction.guild?.id,
-      loadingMessageId: loadingMessage.id,
-      startTime: Date.now()
-    });
+    // 새로운 검색 시작 - 첫 번째 요청을 processing 상태로 변경
+    const firstRequest = processingRequests[0];
+    if (firstRequest) {
+      await firstRequest.update({ status: 'processing' });
+    }
 
     // 백그라운드에서 큐 기반 API 처리 (응답 종료 후 별도 실행)
     setImmediate(() => {
-      processQueueAPIInBackground(server, character, interaction);
+      processQueueAPIInBackground(server, character, searchKey);
     });
 
   } catch (error) {
     logger.error('랭킹 요청 처리 중 오류:', error.message);
+    // 에러 발생 시 요청 삭제
+    await RankRequest.destroy({ where: { userKey } }).catch(() => {});
     if (!modalSubmit.replied) {
       await modalSubmit.followUp({
         content: '랭킹 조회 중 오류가 발생했습니다.'
@@ -227,10 +253,8 @@ async function processRankingRequest(server, character, modalSubmit, interaction
   }
 }
 
-// 백그라운드 큐 API 처리 (원래 채널에 결과 전송)
-async function processQueueAPIInBackground(server, character, interaction) {
-  const searchKey = `${server}-${character}`;
-  
+// 백그라운드 큐 API 처리 (모든 대기 중인 사용자에게 결과 전송)
+async function processQueueAPIInBackground(server, character, searchKey) {
   try {
     // 1. 검색 요청 시작
     const searchResponse = await axios.post(`${settings.RANK_API_URL}/search`, {
@@ -263,15 +287,15 @@ async function processQueueAPIInBackground(server, character, interaction) {
           // API 응답을 기존 형식으로 파싱
           const data = parseAPIResponse(status.character);
           if (data) {
-            // 원래 채널에 랭킹 카드 전송
-            await sendRankingToOriginalChannel(data, interaction, searchKey);
+            // 모든 대기 중인 사용자에게 랭킹 카드 전송
+            await sendRankingToAllWaitingUsers(data, searchKey);
           } else {
-            await sendErrorToOriginalChannel('데이터 파싱에 실패했습니다.', interaction, searchKey);
+            await sendErrorToAllWaitingUsers('데이터 파싱에 실패했습니다.', searchKey);
           }
           return;
         } else if (status.status === 'failed') {
           logger.error(`백그라운드 API 검색 실패: ${status.error}`);
-          await sendErrorToOriginalChannel(status.error || '캐릭터를 찾을 수 없습니다.', interaction, searchKey);
+          await sendErrorToAllWaitingUsers(status.error || '캐릭터를 찾을 수 없습니다.', searchKey);
           return;
         }
 
@@ -290,11 +314,11 @@ async function processQueueAPIInBackground(server, character, interaction) {
 
     // 타임아웃
     logger.error('백그라운드 API 조회 타임아웃');
-    await sendErrorToOriginalChannel('조회 시간이 초과되었습니다. 잠시 후 다시 시도해주세요.', interaction, searchKey);
+    await sendErrorToAllWaitingUsers('조회 시간이 초과되었습니다. 잠시 후 다시 시도해주세요.', searchKey);
 
   } catch (error) {
     logger.error(`백그라운드 API 오류: ${error.message}`);
-    await sendErrorToOriginalChannel('랭킹 조회 서비스에 일시적인 문제가 발생했습니다.', interaction, searchKey);
+    await sendErrorToAllWaitingUsers('랭킹 조회 서비스에 일시적인 문제가 발생했습니다.', searchKey);
   }
 }
 
@@ -350,89 +374,117 @@ function parseAPIResponse(apiData) {
   return data;
 }
 
-// 원래 채널에 랭킹 카드 전송
-async function sendRankingToOriginalChannel(data, interaction, searchKey) {
+// 모든 대기 중인 사용자에게 랭킹 카드 전송 (DB 기반)
+async function sendRankingToAllWaitingUsers(data, searchKey) {
   try {
-    const searchInfo = ongoingSearches.get(searchKey);
-    if (!searchInfo) {
+    // DB에서 해당 searchKey의 모든 요청 조회
+    const pendingRequests = await RankRequest.findBySearchKey(searchKey);
+    if (!pendingRequests || pendingRequests.length === 0) {
       logger.error(`검색 정보를 찾을 수 없음: ${searchKey}`);
       return;
     }
 
-    // 채널 객체 가져오기
-    const channel = await interaction.client.channels.fetch(searchInfo.channelId);
-    if (!channel) {
-      logger.error(`채널을 찾을 수 없음: ${searchInfo.channelId}`);
-      return;
-    }
-
-    // 기존 UI 로직으로 랭킹 카드 생성
+    // 랭킹 카드 생성
     const rankingCard = await createRankingCard(data);
     
-    // 로딩 메시지 삭제
-    try {
-      if (searchInfo.loadingMessageId) {
-        const loadingMessage = await channel.messages.fetch(searchInfo.loadingMessageId);
-        await loadingMessage.delete();
-        logger.info(`로딩 메시지 삭제 완료: ${searchInfo.loadingMessageId}`);
+    // 각 대기 중인 사용자에게 전송
+    for (const request of pendingRequests) {
+      try {
+        // Discord client 가져오기 - 첫 번째 요청의 interaction에서 가져오기
+        const { client } = require('../../index'); // 메인 클라이언트 참조
+        
+        // 채널 객체 가져오기
+        const channel = await client.channels.fetch(request.channelId);
+        if (!channel) {
+          logger.error(`채널을 찾을 수 없음: ${request.channelId}`);
+          continue;
+        }
+
+        // 로딩 메시지 삭제
+        try {
+          if (request.loadingMessageId) {
+            const loadingMessage = await channel.messages.fetch(request.loadingMessageId);
+            await loadingMessage.delete();
+            logger.info(`로딩 메시지 삭제 완료: ${request.loadingMessageId}`);
+          }
+        } catch (error) {
+          logger.error('로딩 메시지 삭제 중 오류:', error.message);
+        }
+        
+        // 먼저 멘션 메시지 전송
+        await channel.send({
+          content: `<@${request.userId}> 🎉 **${data.server_name || data.server} 서버의 ${data.character_name || data.character}** 랭킹 조회가 완료되었습니다!`
+        });
+        
+        // 그 다음 랭킹 카드 전송
+        await channel.send(rankingCard);
+        
+        logger.info(`랭킹 카드 전송 완료: ${request.userKey}`);
+
+      } catch (error) {
+        logger.error(`사용자 ${request.userKey}에게 랭킹 전송 중 오류:`, error);
       }
-    } catch (error) {
-      logger.error('로딩 메시지 삭제 중 오류:', error.message);
     }
-    
-    // 먼저 멘션 메시지 전송
-    await channel.send({
-      content: `<@${searchInfo.userId}> 🎉 **${data.server_name || data.server} 서버의 ${data.character_name || data.character}** 랭킹 조회가 완료되었습니다!`
-    });
-    
-    // 그 다음 랭킹 카드 전송
-    await channel.send(rankingCard);
-    
-    logger.info(`랭킹 카드 전송 완료: ${searchKey}`);
+
+    // 모든 요청 완료 처리
+    await RankRequest.completeRequests(searchKey, 'completed');
 
   } catch (error) {
-    logger.error('원래 채널에 랭킹 전송 중 오류:', error);
-  } finally {
-    ongoingSearches.delete(searchKey);
+    logger.error('모든 대기 사용자에게 랭킹 전송 중 오류:', error);
   }
 }
 
-// 원래 채널에 오류 메시지 전송
-async function sendErrorToOriginalChannel(errorMessage, interaction, searchKey) {
+// 모든 대기 중인 사용자에게 오류 메시지 전송 (DB 기반)
+async function sendErrorToAllWaitingUsers(errorMessage, searchKey) {
   try {
-    const searchInfo = ongoingSearches.get(searchKey);
-    if (!searchInfo) {
+    // DB에서 해당 searchKey의 모든 요청 조회
+    const pendingRequests = await RankRequest.findBySearchKey(searchKey);
+    if (!pendingRequests || pendingRequests.length === 0) {
       logger.error(`검색 정보를 찾을 수 없음: ${searchKey}`);
       return;
     }
 
-    // 채널 객체 가져오기
-    const channel = await interaction.client.channels.fetch(searchInfo.channelId);
-    if (!channel) {
-      logger.error(`채널을 찾을 수 없음: ${searchInfo.channelId}`);
-      return;
+    // 각 대기 중인 사용자에게 전송
+    for (const request of pendingRequests) {
+      try {
+        // Discord client 가져오기
+        const { client } = require('../../index'); // 메인 클라이언트 참조
+        
+        // 채널 객체 가져오기
+        const channel = await client.channels.fetch(request.channelId);
+        if (!channel) {
+          logger.error(`채널을 찾을 수 없음: ${request.channelId}`);
+          continue;
+        }
+
+        // 로딩 메시지 삭제
+        try {
+          if (request.loadingMessageId) {
+            const loadingMessage = await channel.messages.fetch(request.loadingMessageId);
+            await loadingMessage.delete();
+            logger.info(`로딩 메시지 삭제 완료: ${request.loadingMessageId}`);
+          }
+        } catch (error) {
+          logger.error('로딩 메시지 삭제 중 오류:', error.message);
+        }
+        
+        // 오류 메시지 전송
+        await channel.send({
+          content: `<@${request.userId}> ❌ 랭킹 조회 실패: ${errorMessage}`
+        });
+
+        logger.info(`오류 메시지 전송 완료: ${request.userKey}`);
+
+      } catch (error) {
+        logger.error(`사용자 ${request.userKey}에게 오류 메시지 전송 중 오류:`, error);
+      }
     }
 
-    // 로딩 메시지 삭제
-    try {
-      if (searchInfo.loadingMessageId) {
-        const loadingMessage = await channel.messages.fetch(searchInfo.loadingMessageId);
-        await loadingMessage.delete();
-        logger.info(`로딩 메시지 삭제 완료: ${searchInfo.loadingMessageId}`);
-      }
-    } catch (error) {
-      logger.error('로딩 메시지 삭제 중 오류:', error.message);
-    }
-    
-    // 오류 메시지 전송
-    await channel.send({
-      content: `<@${searchInfo.userId}> ❌ 랭킹 조회 실패: ${errorMessage}`
-    });
+    // 모든 요청 실패 처리
+    await RankRequest.completeRequests(searchKey, 'failed');
 
   } catch (error) {
-    logger.error('원래 채널에 오류 메시지 전송 중 오류:', error);
-  } finally {
-    ongoingSearches.delete(searchKey);
+    logger.error('모든 대기 사용자에게 오류 메시지 전송 중 오류:', error);
   }
 }
 
