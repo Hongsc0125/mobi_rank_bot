@@ -563,11 +563,22 @@ async function createRankingCard(data) {
   // 직업 이름에서 '견습 ' 제거 (예: '견습 힐러' -> '힐러')
   const classNameWithoutSpace = className.replace(/견습\s+/g, '');
   
-  const section = new SectionBuilder()
-  .setThumbnailAccessory(
-    new ThumbnailBuilder().setURL(`http://${process.env.SERVER_IP}:${process.env.WEB_PORT}/images/class_icon/${classNameWithoutSpace}.png`)
-  )
-  .addTextDisplayComponents(
+  // 클래스 아이콘 URL 생성 (환경 변수 체크)
+  let classIconUrl = null;
+  if (process.env.SERVER_IP && process.env.WEB_PORT) {
+    classIconUrl = `http://${process.env.SERVER_IP}:${process.env.WEB_PORT}/images/class_icon/${classNameWithoutSpace}.png`;
+  }
+  
+  const section = new SectionBuilder();
+  
+  // 클래스 아이콘이 있으면 추가
+  if (classIconUrl) {
+    section.setThumbnailAccessory(
+      new ThumbnailBuilder().setURL(classIconUrl)
+    );
+  }
+  
+  section.addTextDisplayComponents(
       new TextDisplayBuilder().setContent(`### <:__:1371226603702583486> 전투력 : ${combatPower}\n> ${combatRank}\n> \`${combatEmoji}${Math.abs(combatChange).toLocaleString('ko-KR')}\`\n`
     +
     `### <:__:1371226678478770276> 생활력 : ${lifePower}\n> ${lifeRank}\n> \`${lifeEmoji}${Math.abs(lifeChange).toLocaleString('ko-KR')}\`\n`
