@@ -104,17 +104,25 @@ async function processRankingRequest(server, character, modalSubmit, interaction
   const searchKey = `${server}-${character}`;
   
   try {
-    // 사용자 요청 정보를 DB에 저장
-    await RankRequest.create({
-      searchKey: searchKey,
-      userKey: userKey,
-      userId: interaction.user.id,
-      channelId: interaction.channel.id,
-      guildId: interaction.guild?.id,
-      serverName: server,
-      characterName: character,
-      status: 'waiting'
+    // 사용자 요청 정보를 DB에 저장 (중복 요청 방지)
+    const [request, created] = await RankRequest.findOrCreate({
+      where: { userKey },
+      defaults: {
+        searchKey: searchKey,
+        userKey: userKey,
+        userId: interaction.user.id,
+        channelId: interaction.channel.id,
+        guildId: interaction.guild?.id,
+        serverName: server,
+        characterName: character,
+        status: 'waiting'
+      }
     });
+    
+    if (!created) {
+      logger.info(`중복 요청 감지됨: ${userKey}`);
+      return; // 이미 처리 중인 요청이므로 종료
+    }
 
     // 3) DB에서 데이터 조회 (기존 로직)
     let data = {};
