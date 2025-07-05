@@ -120,8 +120,27 @@ async function processRankingRequest(server, character, modalSubmit, interaction
     });
     
     if (!created) {
-      logger.info(`중복 요청 감지됨: ${userKey}`);
-      return; // 이미 처리 중인 요청이므로 종료
+      logger.info(`중복 요청 감지됨: ${userKey} - 기존 요청에 추가 응답 설정`);
+      
+      // 기존 요청이 있으면 별도의 응답 메시지 보내고 기존 요청에 의존
+      await modalSubmit.followUp({
+        content: `🔄 **${server} 서버의 ${character}** 랭킹 조회가 이미 진행 중입니다.\n⏱️ 조회가 완료되면 이 채널에서 ${interaction.user}님께도 결과를 전송해드리겠습니다!`
+      });
+      
+      // 별도의 대기 요청으로 등록 (중복 키 방지를 위해 타임스탬프 추가)
+      const waitingUserKey = `${userKey}-${Date.now()}`;
+      await RankRequest.create({
+        searchKey: searchKey,
+        userKey: waitingUserKey,
+        userId: interaction.user.id,
+        channelId: interaction.channel.id,
+        guildId: interaction.guild?.id,
+        serverName: server,
+        characterName: character,
+        status: 'waiting'
+      });
+      
+      return;
     }
 
     // 3) DB에서 데이터 조회 (기존 로직)
