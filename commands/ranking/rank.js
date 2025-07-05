@@ -384,12 +384,15 @@ function parseAPIResponse(apiData) {
   logger.info(`매력 데이터: ${JSON.stringify(charmData)}`);
   logger.info(`생활력 데이터: ${JSON.stringify(lifeData)}`);
   
+  // 클래스명 추출 (전투력 -> 매력 -> 생활력 순서로 우선순위)
+  const className = combatData.class || charmData.class || lifeData.class || '알 수 없음';
+  
   // 전체 데이터 구성 (현재 API 형식에 맞추어 정확히 파싱)
   const data = {
     // 기본 캐릭터 정보
     character_name: apiData.character,
     server_name: apiData.server,
-    class_name: combatData.class,  // 기본적으로 전투력 탭의 클래스 사용
+    class_name: className,  // 우선순위에 따라 클래스명 선택
     
     // 전투력 데이터 처리
     combat_rank: combatData.rank,
