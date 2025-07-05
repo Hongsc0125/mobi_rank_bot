@@ -370,14 +370,19 @@ async function processQueueAPIInBackground(server, character, searchKey) {
   }
 }
 
-// API 응답을 기존 형식으로 파싱 (기존 로직)
+// API 응답을 기존 형식으로 파싱 (수정된 로직)
 function parseAPIResponse(apiData) {
   const rankings = apiData.rankings || {};
   
-  // 랭킹 데이터 추출
-  const combatData = rankings["전투력"] || {};
-  const charmData = rankings["매력"] || {};
-  const lifeData = rankings["생활력"] || {};
+  // 랭킹 데이터 추출 - 실제 API 구조에 맞게 수정
+  const combatRanking = rankings["전투력"] || {};
+  const charmRanking = rankings["매력"] || {};
+  const lifeRanking = rankings["생활력"] || {};
+  
+  // data 배열에서 첫 번째 항목 추출 (없으면 빈 객체)
+  const combatData = (combatRanking.data && combatRanking.data.length > 0) ? combatRanking.data[0] : {};
+  const charmData = (charmRanking.data && charmRanking.data.length > 0) ? charmRanking.data[0] : {};
+  const lifeData = (lifeRanking.data && lifeRanking.data.length > 0) ? lifeRanking.data[0] : {};
   
   // 각 랭킹 데이터 로깅
   logger.info(`전투력 데이터: ${JSON.stringify(combatData)}`);
@@ -385,38 +390,42 @@ function parseAPIResponse(apiData) {
   logger.info(`생활력 데이터: ${JSON.stringify(lifeData)}`);
   
   // 클래스명 추출 (전투력 -> 매력 -> 생활력 순서로 우선순위)
-  const className = combatData.class || charmData.class || lifeData.class || '알 수 없음';
+  const className = combatData.class_name || charmData.class_name || lifeData.class_name || '알 수 없음';
   
-  // 전체 데이터 구성 (현재 API 형식에 맞추어 정확히 파싱)
+  // 랭킹 위치 포맷팅 함수
+  const formatRank = (rank) => rank ? `${rank.toLocaleString('ko-KR')}위` : '알 수 없음';
+  const formatPower = (power) => power ? power.toLocaleString('ko-KR') : '알 수 없음';
+  
+  // 전체 데이터 구성 (실제 API 형식에 맞추어 정확히 파싱)
   const data = {
     // 기본 캐릭터 정보
     character_name: apiData.character,
     server_name: apiData.server,
-    class_name: className,  // 우선순위에 따라 클래스명 선택
+    class_name: className,
     
     // 전투력 데이터 처리
-    combat_rank: combatData.rank,
-    combat_power: combatData.power,
-    combat_change: combatData.change,
-    combat_change_type: combatData.change_type,
+    combat_rank: formatRank(combatData.rank_position),
+    combat_power: formatPower(combatData.power_value),
+    combat_change: combatData.change_amount || 0,
+    combat_change_type: combatData.change_type || 'none',
     
     // 매력 데이터 처리
-    charm_rank: charmData.rank,
-    charm_power: charmData.power,
-    charm_change: charmData.change,
-    charm_change_type: charmData.change_type,
+    charm_rank: formatRank(charmData.rank_position),
+    charm_power: formatPower(charmData.power_value),
+    charm_change: charmData.change_amount || 0,
+    charm_change_type: charmData.change_type || 'none',
     
     // 생활력 데이터 처리
-    life_rank: lifeData.rank,
-    life_power: lifeData.power,
-    life_change: lifeData.change,
-    life_change_type: lifeData.change_type,
+    life_rank: formatRank(lifeData.rank_position),
+    life_power: formatPower(lifeData.power_value),
+    life_change: lifeData.change_amount || 0,
+    life_change_type: lifeData.change_type || 'none',
     
-    // 기존 필드와 호환 유지
-    rank_position: combatData.rank,
-    power_value: combatData.power,
-    change_amount: combatData.change,
-    change_type: combatData.change_type
+    // 기존 필드와 호환 유지 (전투력 기준)
+    rank_position: formatRank(combatData.rank_position),
+    power_value: formatPower(combatData.power_value),
+    change_amount: combatData.change_amount || 0,
+    change_type: combatData.change_type || 'none'
   };
   
   // 파싱된 데이터 로깅
