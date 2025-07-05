@@ -104,46 +104,7 @@ async function processRankingRequest(server, character, modalSubmit, interaction
   const searchKey = `${server}-${character}`;
   
   try {
-    // 사용자 요청 정보를 DB에 저장 (중복 요청 방지)
-    const [request, created] = await RankRequest.findOrCreate({
-      where: { userKey },
-      defaults: {
-        searchKey: searchKey,
-        userKey: userKey,
-        userId: interaction.user.id,
-        channelId: interaction.channel.id,
-        guildId: interaction.guild?.id,
-        serverName: server,
-        characterName: character,
-        status: 'waiting'
-      }
-    });
-    
-    if (!created) {
-      logger.info(`중복 요청 감지됨: ${userKey} - 기존 요청에 추가 응답 설정`);
-      
-      // 기존 요청이 있으면 별도의 응답 메시지 보내고 기존 요청에 의존
-      await modalSubmit.followUp({
-        content: `🔄 **${server} 서버의 ${character}** 랭킹 조회가 이미 진행 중입니다.\n⏱️ 조회가 완료되면 이 채널에서 ${interaction.user}님께도 결과를 전송해드리겠습니다!`
-      });
-      
-      // 별도의 대기 요청으로 등록 (중복 키 방지를 위해 타임스탬프 추가)
-      const waitingUserKey = `${userKey}-${Date.now()}`;
-      await RankRequest.create({
-        searchKey: searchKey,
-        userKey: waitingUserKey,
-        userId: interaction.user.id,
-        channelId: interaction.channel.id,
-        guildId: interaction.guild?.id,
-        serverName: server,
-        characterName: character,
-        status: 'waiting'
-      });
-      
-      return;
-    }
-
-    // 3) DB에서 데이터 조회 (기존 로직)
+    // 1) 먼저 DB에서 랭킹 데이터 조회
     let data = {};
     try {
       // 랭킹 타입 정의
@@ -228,13 +189,50 @@ async function processRankingRequest(server, character, modalSubmit, interaction
       logger.error(`DB 오류: ${e.message}`);
     }
 
+    // 2) 중복 요청 체크 - DB 조회 결과로 즉시 응답
+    const existingRequest = await RankRequest.findByUserKey(userKey);
+    if (existingRequest) {
+      logger.info(`중복 요청 감지됨: ${userKey} - DB 조회 결과로 응답`);
+      
+      // DB에서 데이터가 있으면 바로 응답
+      if (Object.keys(data).length > 0) {
+        await sendRankingResultWithOriginalUI(data, modalSubmit, interaction.user);
+        return;
+      } else {
+        // DB에 데이터가 없으면 기존 요청 상태에 따라 처리
+        if (existingRequest.status === 'failed') {
+          // 기존 요청이 실패했으면 기존 요청 삭제하고 새로 처리
+          await RankRequest.destroy({ where: { userKey } });
+          logger.info(`실패한 기존 요청 삭제 후 새로 처리: ${userKey}`);
+        } else {
+          // 진행 중이면 대기 안내
+          await modalSubmit.followUp({
+            content: `🔄 **${server} 서버의 ${character}** 랭킹 조회가 이미 진행 중입니다.\n⏱️ 잠시만 기다려주세요!`,
+            ephemeral: true
+          });
+          return;
+        }
+      }
+    }
+    
+    // 3) 새로운 요청이거나 DB에 데이터가 없는 경우
     // DB에 데이터가 있으면 즉시 응답
     if (Object.keys(data).length > 0) {
       await sendRankingResultWithOriginalUI(data, modalSubmit, interaction.user);
-      // 요청 완료 처리
-      await RankRequest.destroy({ where: { userKey } });
       return;
     }
+
+    // 새로운 요청 생성
+    await RankRequest.create({
+      searchKey: searchKey,
+      userKey: userKey,
+      userId: interaction.user.id,
+      channelId: interaction.channel.id,
+      guildId: interaction.guild?.id,
+      serverName: server,
+      characterName: character,
+      status: 'waiting'
+    });
 
     // DB에 데이터가 없으면 즉시 안내 메시지 보내고 백그라운드 처리
     const loadingMessage = await modalSubmit.followUp({
