@@ -393,8 +393,8 @@ function parseAPIResponse(apiData) {
   const className = combatData.class_name || charmData.class_name || lifeData.class_name || '알 수 없음';
   
   // 랭킹 위치 포맷팅 함수
-  const formatRank = (rank) => rank ? `${rank.toLocaleString('ko-KR')}위` : '알 수 없음';
-  const formatPower = (power) => power ? power.toLocaleString('ko-KR') : '알 수 없음';
+  const formatRank = (rank) => rank && rank > 0 ? `${rank.toLocaleString('ko-KR')}위` : '순위권 외';
+  const formatPower = (power) => power && power > 0 ? power.toLocaleString('ko-KR') : '0';
   
   // 전체 데이터 구성 (실제 API 형식에 맞추어 정확히 파싱)
   const data = {
@@ -557,9 +557,9 @@ async function createRankingCard(data) {
   const serverName = data.server_name || data.server || '알 수 없음';
   const className = data.class_name || data.class || '알 수 없음';
   
-  // 전투력 랭킹 데이터 처리
-  const combatRank = data.rank_position || data.combat_rank || '알 수 없음';
-  const combatPower = data.power_value || data.combat_power || '알 수 없음';
+  // 전투력 랭킹 데이터 처리 (DB/API 통합 처리)
+  const combatRank = data.rank_position || data.combat_rank || '순위권 외';
+  const combatPower = data.power_value || data.combat_power || '0';
   const combatRawChange = data.combat_change || data.change_amount || 0;
   let combatChange;
   try {
@@ -578,9 +578,9 @@ async function createRankingCard(data) {
     combatChangeType === 'down' ? '🔻' : // 빨간색 아래화살표 (U+1F53D)
     '-';
   
-  // 매력 랭킹 데이터 처리
-  const charmRank = data.charm_rank_formatted || data.charm_rank || '알 수 없음';
-  const charmPower = data.charm_power_formatted || data.charm_power || '알 수 없음';
+  // 매력 랭킹 데이터 처리 (DB/API 통합 처리)
+  const charmRank = data.charm_rank_formatted || data.charm_rank || '순위권 외';
+  const charmPower = data.charm_power_formatted || data.charm_power || '0';
   const charmRawChange = data.charm_change || 0;
   let charmChange;
   try {
@@ -599,9 +599,9 @@ async function createRankingCard(data) {
     charmChangeType === 'down' ? '🔻' : 
     '-';
   
-  // 생활력 랭킹 데이터 처리
-  const lifeRank = data.life_rank_formatted || data.life_rank || '알 수 없음';
-  const lifePower = data.life_power_formatted || data.life_power || '알 수 없음';
+  // 생활력 랭킹 데이터 처리 (DB/API 통합 처리)
+  const lifeRank = data.life_rank_formatted || data.life_rank || '순위권 외';
+  const lifePower = data.life_power_formatted || data.life_power || '0';
   const lifeRawChange = data.life_change || 0;
   let lifeChange;
   try {
