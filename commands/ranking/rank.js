@@ -205,11 +205,22 @@ async function processRankingRequest(server, character, modalSubmit, interaction
           await RankRequest.destroy({ where: { userKey } });
           logger.info(`실패한 기존 요청 삭제 후 새로 처리: ${userKey}`);
         } else {
-          // 진행 중이면 대기 안내
-          await modalSubmit.followUp({
-            content: `🔄 **${server} 서버의 ${character}** 랭킹 조회가 이미 진행 중입니다.\n⏱️ 잠시만 기다려주세요!`,
-            ephemeral: true
-          });
+          // 진행 중이면 대기 안내 (안전한 응답 처리)
+          try {
+            if (!modalSubmit.replied && !modalSubmit.deferred) {
+              await modalSubmit.reply({
+                content: `🔄 **${server} 서버의 ${character}** 랭킹 조회가 이미 진행 중입니다.\n⏱️ 잠시만 기다려주세요!`,
+                ephemeral: true
+              });
+            } else {
+              await modalSubmit.followUp({
+                content: `🔄 **${server} 서버의 ${character}** 랭킹 조회가 이미 진행 중입니다.\n⏱️ 잠시만 기다려주세요!`,
+                ephemeral: true
+              });
+            }
+          } catch (replyError) {
+            logger.error('중복 요청 응답 중 오류:', replyError);
+          }
           return;
         }
       }
@@ -267,13 +278,25 @@ async function processRankingRequest(server, character, modalSubmit, interaction
     });
 
   } catch (error) {
-    logger.error('랭킹 요청 처리 중 오류:', error.message);
+    logger.error('랭킹 요청 처리 중 오류:', error);
     // 에러 발생 시 요청 삭제
     await RankRequest.destroy({ where: { userKey } }).catch(() => {});
-    if (!modalSubmit.replied) {
-      await modalSubmit.followUp({
-        content: '랭킹 조회 중 오류가 발생했습니다.'
-      });
+    
+    // 안전한 오류 응답 처리
+    try {
+      if (!modalSubmit.replied && !modalSubmit.deferred) {
+        await modalSubmit.reply({
+          content: '랭킹 조회 중 오류가 발생했습니다.',
+          ephemeral: true
+        });
+      } else {
+        await modalSubmit.followUp({
+          content: '랭킹 조회 중 오류가 발생했습니다.',
+          ephemeral: true
+        });
+      }
+    } catch (replyError) {
+      logger.error('오류 응답 전송 중 추가 오류:', replyError);
     }
   }
 }
