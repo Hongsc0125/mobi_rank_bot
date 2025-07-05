@@ -571,16 +571,15 @@ async function createRankingCard(data) {
   // 직업 이름에서 '견습 ' 제거 (예: '견습 힐러' -> '힐러')
   const classNameWithoutSpace = className.replace(/견습\s+/g, '');
   
-  // 클래스 아이콘 URL 생성 (환경 변수 체크)
-  let classIconUrl = null;
-  if (process.env.SERVER_IP && process.env.WEB_PORT) {
-    classIconUrl = `http://${process.env.SERVER_IP}:${process.env.WEB_PORT}/images/class_icon/${classNameWithoutSpace}.png`;
-  }
+  // 클래스 아이콘 URL 생성
+  const serverIp = process.env.SERVER_IP || settings.SERVER_IP || 'localhost';
+  const webPort = process.env.WEB_PORT || settings.WEB_PORT || 3000;
+  const classIconUrl = `http://${serverIp}:${webPort}/images/class_icon/${classNameWithoutSpace}.png`;
   
   const section = new SectionBuilder();
   
-  // 클래스 아이콘이 있으면 추가
-  if (classIconUrl) {
+  // 클래스 아이콘 추가 (유효한 URL인 경우만)
+  if (classIconUrl && !classIconUrl.includes('undefined')) {
     section.setThumbnailAccessory(
       new ThumbnailBuilder().setURL(classIconUrl)
     );
