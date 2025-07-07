@@ -80,7 +80,7 @@ module.exports = {
         { 
           where: { 
             status: ['waiting', 'processing'],
-            createdAt: { [require('sequelize').Op.lt]: oneMinuteAgo }
+            created_at: { [require('sequelize').Op.lt]: oneMinuteAgo }
           }
         }
       );
@@ -90,7 +90,7 @@ module.exports = {
         where: { 
           userKey, 
           status: ['waiting', 'processing'],
-          createdAt: { [require('sequelize').Op.gte]: oneMinuteAgo }
+          created_at: { [require('sequelize').Op.gte]: oneMinuteAgo }
         }
       });
       
