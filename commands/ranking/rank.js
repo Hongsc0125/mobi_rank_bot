@@ -190,7 +190,14 @@ async function processRankingRequest(server, character, modalSubmit, interaction
     }
 
     // 2) 중복 요청 체크 - DB 조회 결과로 즉시 응답
-    const existingRequest = await RankRequest.findByUserKey(userKey);
+    let existingRequest = null;
+    try {
+      existingRequest = await RankRequest.findByUserKey(userKey);
+    } catch (dbError) {
+      logger.error('DB 중복 요청 체크 오류:', dbError);
+      // DB 오류 시 중복 체크 건너뛰고 계속 진행
+    }
+    
     if (existingRequest) {
       logger.info(`중복 요청 감지됨: ${userKey} - DB 조회 결과로 응답`);
       
@@ -233,17 +240,29 @@ async function processRankingRequest(server, character, modalSubmit, interaction
       return;
     }
 
-    // 새로운 요청 생성
-    await RankRequest.create({
-      searchKey: searchKey,
-      userKey: userKey,
-      userId: interaction.user.id,
-      channelId: interaction.channel.id,
-      guildId: interaction.guild?.id,
-      serverName: server,
-      characterName: character,
-      status: 'waiting'
-    });
+    // 새로운 요청 생성 (데이터 검증 추가)
+    try {
+      await RankRequest.create({
+        searchKey: searchKey,
+        userKey: userKey,
+        userId: interaction.user.id,
+        channelId: interaction.channel.id,
+        guildId: interaction.guild?.id,
+        serverName: server.substring(0, 50), // 길이 제한
+        characterName: character.substring(0, 100), // 길이 제한
+        status: 'waiting'
+      });
+      logger.info(`새로운 요청 생성 완료: ${userKey}`);
+    } catch (createError) {
+      logger.error(`DB 요청 생성 오류: ${createError.message}`, {
+        searchKey,
+        userKey,
+        server,
+        character,
+        error: createError
+      });
+      throw createError;
+    }
 
     // DB에 데이터가 없으면 즉시 안내 메시지 보내고 백그라운드 처리
     const loadingMessage = await modalSubmit.followUp({
@@ -624,14 +643,14 @@ async function createRankingCard(data) {
   const classNameWithoutSpace = className.replace(/견습\s+/g, '');
   
   // 클래스 아이콘 URL 생성
-  const serverIp = process.env.SERVER_IP || settings.SERVER_IP || 'localhost';
-  const webPort = process.env.WEB_PORT || settings.WEB_PORT || 3000;
-  const classIconUrl = `http://${serverIp}:${webPort}/images/class_icon/${classNameWithoutSpace}.png`;
-  
   const section = new SectionBuilder();
   
-  // 클래스 아이콘 추가 (유효한 URL인 경우만)
-  if (classIconUrl && !classIconUrl.includes('undefined')) {
+  // 클래스명이 유효한 경우에만 아이콘 추가
+  if (classNameWithoutSpace && classNameWithoutSpace !== '알 수 없음' && !classNameWithoutSpace.includes('undefined')) {
+    const serverIp = process.env.SERVER_IP || settings.SERVER_IP || 'localhost';
+    const webPort = process.env.WEB_PORT || settings.WEB_PORT || 3000;
+    const classIconUrl = `http://${serverIp}:${webPort}/images/class_icon/${classNameWithoutSpace}.png`;
+    
     section.setThumbnailAccessory(
       new ThumbnailBuilder().setURL(classIconUrl)
     );
