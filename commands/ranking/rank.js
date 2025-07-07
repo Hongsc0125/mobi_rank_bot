@@ -240,26 +240,47 @@ async function processRankingRequest(server, character, modalSubmit, interaction
       return;
     }
 
-    // 새로운 요청 생성 (데이터 검증 추가)
+    // 원자적으로 요청 생성 (중복 시 기존 요청 반환)
+    let requestRecord;
     try {
-      await RankRequest.create({
-        searchKey: searchKey,
-        userKey: userKey,
-        userId: interaction.user.id,
-        channelId: interaction.channel.id,
-        guildId: interaction.guild?.id,
-        serverName: server.substring(0, 50), // 길이 제한
-        characterName: character.substring(0, 100), // 길이 제한
-        status: 'waiting'
+      const [record, created] = await RankRequest.findOrCreate({
+        where: { userKey },
+        defaults: {
+          searchKey: searchKey,
+          userKey: userKey,
+          userId: interaction.user.id,
+          channelId: interaction.channel.id,
+          guildId: interaction.guild?.id,
+          serverName: server.substring(0, 50), // 길이 제한
+          characterName: character.substring(0, 100), // 길이 제한
+          status: 'waiting'
+        }
       });
-      logger.info(`새로운 요청 생성 완료: ${userKey}`);
+      
+      requestRecord = record;
+      if (created) {
+        logger.info(`새로운 요청 생성 완료: ${userKey}`);
+      } else {
+        logger.info(`기존 요청 발견됨: ${userKey}`);
+        // 기존 요청이 있으면 대기 메시지 보내고 종료
+        await modalSubmit.followUp({
+          content: `🔄 **${server} 서버의 ${character}** 랭킹 조회가 이미 진행 중입니다.\n⏱️ 잠시만 기다려주세요!`,
+          ephemeral: true
+        });
+        return;
+      }
     } catch (createError) {
       logger.error(`DB 요청 생성 오류: ${createError.message}`, {
         searchKey,
         userKey,
         server,
         character,
-        error: createError
+        userId: interaction.user.id,
+        channelId: interaction.channel.id,
+        guildId: interaction.guild?.id,
+        errorName: createError.name,
+        errorStack: createError.stack,
+        validationErrors: createError.errors || null
       });
       throw createError;
     }
@@ -270,10 +291,7 @@ async function processRankingRequest(server, character, modalSubmit, interaction
     });
 
     // 로딩 메시지 ID 업데이트
-    await RankRequest.update(
-      { loadingMessageId: loadingMessage.id },
-      { where: { userKey } }
-    );
+    await requestRecord.update({ loadingMessageId: loadingMessage.id });
 
     // 이미 해당 캐릭터에 대한 검색이 진행 중인지 확인
     const processingRequests = await RankRequest.findBySearchKey(searchKey);
