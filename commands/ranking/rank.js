@@ -70,10 +70,31 @@ module.exports = {
         return;
       }
 
-      // 사용자별 중복 요청 체크 (DB 기반)
+      // 사용자별 중복 요청 체크 - 1분 이상 된 요청은 실패 처리
       const userKey = `${interaction.user.id}-${server}-${character}`;
-      const existingRequest = await RankRequest.findByUserKey(userKey);
-      if (existingRequest) {
+      const oneMinuteAgo = new Date(Date.now() - 60 * 1000);
+      
+      // 1분 이상 된 진행중인 요청들을 실패로 처리
+      await RankRequest.update(
+        { status: 'failed' },
+        { 
+          where: { 
+            status: ['waiting', 'processing'],
+            createdAt: { [require('sequelize').Op.lt]: oneMinuteAgo }
+          }
+        }
+      );
+      
+      // 현재 진행중인 요청 체크 (1분 내)
+      const recentRequest = await RankRequest.findOne({
+        where: { 
+          userKey, 
+          status: ['waiting', 'processing'],
+          createdAt: { [require('sequelize').Op.gte]: oneMinuteAgo }
+        }
+      });
+      
+      if (recentRequest) {
         await modalSubmit.reply({ 
           content: '⚠️ 해당 캐릭터의 조회가 이미 진행 중입니다. 잠시만 기다려주세요.', 
           ephemeral: true 
@@ -189,52 +210,7 @@ async function processRankingRequest(server, character, modalSubmit, interaction
       logger.error(`DB 오류: ${e.message}`);
     }
 
-    // 2) 중복 요청 체크 - DB 조회 결과로 즉시 응답
-    let existingRequest = null;
-    try {
-      existingRequest = await RankRequest.findByUserKey(userKey);
-    } catch (dbError) {
-      logger.error('DB 중복 요청 체크 오류:', dbError);
-      // DB 오류 시 중복 체크 건너뛰고 계속 진행
-    }
-    
-    if (existingRequest) {
-      logger.info(`중복 요청 감지됨: ${userKey} - DB 조회 결과로 응답`);
-      
-      // DB에서 데이터가 있으면 바로 응답
-      if (Object.keys(data).length > 0) {
-        await sendRankingResultWithOriginalUI(data, modalSubmit, interaction.user);
-        return;
-      } else {
-        // DB에 데이터가 없으면 기존 요청 상태에 따라 처리
-        if (existingRequest.status === 'failed') {
-          // 기존 요청이 실패했으면 기존 요청 삭제하고 새로 처리
-          await RankRequest.destroy({ where: { userKey } });
-          logger.info(`실패한 기존 요청 삭제 후 새로 처리: ${userKey}`);
-        } else {
-          // 진행 중이면 대기 안내 (안전한 응답 처리)
-          try {
-            if (!modalSubmit.replied && !modalSubmit.deferred) {
-              await modalSubmit.reply({
-                content: `🔄 **${server} 서버의 ${character}** 랭킹 조회가 이미 진행 중입니다.\n⏱️ 잠시만 기다려주세요!`,
-                ephemeral: true
-              });
-            } else {
-              await modalSubmit.followUp({
-                content: `🔄 **${server} 서버의 ${character}** 랭킹 조회가 이미 진행 중입니다.\n⏱️ 잠시만 기다려주세요!`,
-                ephemeral: true
-              });
-            }
-          } catch (replyError) {
-            logger.error('중복 요청 응답 중 오류:', replyError);
-          }
-          return;
-        }
-      }
-    }
-    
-    // 3) 새로운 요청이거나 DB에 데이터가 없는 경우
-    // DB에 데이터가 있으면 즉시 응답
+    // 2) DB에 데이터가 있으면 즉시 응답
     if (Object.keys(data).length > 0) {
       await sendRankingResultWithOriginalUI(data, modalSubmit, interaction.user);
       return;

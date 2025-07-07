@@ -30,7 +30,7 @@ client.on(Events.ClientReady, async () => {
   // DB 초기화
   await initializeRankRequests();
   
-  // 정기적으로 오래된 요청 정리 (10분마다)
+  // 정기적으로 오래된 요청 정리 (30초마다)
   const RankRequest = require('./db/models/RankRequest');
   setInterval(async () => {
     try {
@@ -41,7 +41,7 @@ client.on(Events.ClientReady, async () => {
     } catch (error) {
       console.error('랭크 요청 정리 중 오류:', error);
     }
-  }, 10 * 60 * 1000); // 10분
+  }, 30 * 1000); // 30초
   
   // 등록된 명령어 목록 출력
   console.log('\n=== 등록된 명령어 목록 ===');

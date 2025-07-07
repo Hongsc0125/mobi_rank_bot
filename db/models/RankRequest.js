@@ -95,10 +95,23 @@ RankRequest.findByUserKey = async function(userKey) {
 
 RankRequest.cleanupOldRequests = async function() {
   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+  const oneMinuteAgo = new Date(Date.now() - 60 * 1000);
+  
+  // 1분 이상 된 진행중인 요청들을 실패 처리
+  await this.update(
+    { status: 'failed' },
+    { 
+      where: { 
+        status: ['waiting', 'processing'],
+        created_at: { [require('sequelize').Op.lt]: oneMinuteAgo }
+      }
+    }
+  );
+  
+  // 1시간 이상 된 모든 요청 삭제
   return await this.destroy({
     where: {
-      created_at: { [require('sequelize').Op.lt]: oneHourAgo },
-      status: ['waiting', 'processing']
+      created_at: { [require('sequelize').Op.lt]: oneHourAgo }
     }
   });
 };
