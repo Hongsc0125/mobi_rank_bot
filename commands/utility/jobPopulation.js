@@ -47,7 +47,7 @@ module.exports = {
       const totalPopulation = parseInt(response.data.total_population || '0').toLocaleString('ko-KR');
 
       // 제목과 이미지 URL 설정
-      const titleImage = 'https://harmari.duckdns.org/static/population.png';
+      const titleImage = 'https://harmari.duckdns.org/static/population_job.png';
       
       // 직업별 인구 데이터 텍스트 생성
       let jobText = '## 직업별 인구 통계\n\n';
@@ -115,6 +115,14 @@ module.exports = {
           mediaItems.push({ media: { url: tableImageUrlLocal, type: 4 } });
         }
         const container = new ContainerBuilder()
+          .addMediaGalleryComponents(
+            new MediaGalleryBuilder().addItems({
+              media: { url: titleImage, type: 4 }
+            })
+          )
+          .addSeparatorComponents(
+            new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true)
+          )
           .addMediaGalleryComponents(
             new MediaGalleryBuilder().addItems(...mediaItems)
           )
