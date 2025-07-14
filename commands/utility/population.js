@@ -43,7 +43,7 @@ module.exports = {
       const timestamp = String(response.data.timestamp || '');
 
       // 제목과 이미지 URL 설정
-      const titleImage = 'https://harmari.duckdns.org/static/population.png';
+      const titleImage = 'https://harmari.duckdns.org/static/population2.png';
       
       // 서버별 인구 데이터 텍스트 생성
       let populationText = '## 서버별 인구 통계\n\n';
