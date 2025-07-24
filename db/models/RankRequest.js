@@ -87,6 +87,13 @@ RankRequest.findBySearchKey = async function(searchKey) {
   });
 };
 
+RankRequest.findBySearchKeyAllStatus = async function(searchKey) {
+  return await this.findAll({
+    where: { searchKey },
+    order: [['created_at', 'ASC']]
+  });
+};
+
 RankRequest.findByUserKey = async function(userKey) {
   return await this.findOne({
     where: { userKey, status: ['waiting', 'processing'] }
@@ -121,6 +128,15 @@ RankRequest.completeRequests = async function(searchKey, status = 'completed') {
     { status },
     {
       where: { searchKey, status: ['waiting', 'processing'] }
+    }
+  );
+};
+
+RankRequest.completeAllRequests = async function(searchKey, status = 'completed') {
+  return await this.update(
+    { status },
+    {
+      where: { searchKey }
     }
   );
 };

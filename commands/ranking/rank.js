@@ -544,12 +544,21 @@ async function sendRankingToAllWaitingUsers(data, searchKey) {
 // 모든 대기 중인 사용자에게 오류 메시지 전송 (DB 기반)
 async function sendErrorToAllWaitingUsers(errorMessage, searchKey) {
   try {
-    // DB에서 해당 searchKey의 모든 요청 조회
-    const pendingRequests = await RankRequest.findBySearchKey(searchKey);
+    // DB에서 해당 searchKey의 모든 요청 조회 (모든 상태 포함)
+    let pendingRequests = await RankRequest.findBySearchKey(searchKey);
+    
+    // 대기/처리 중인 요청이 없으면 모든 상태에서 검색
+    if (!pendingRequests || pendingRequests.length === 0) {
+      logger.info(`대기/처리 중인 요청이 없어 모든 상태에서 재검색: ${searchKey}`);
+      pendingRequests = await RankRequest.findBySearchKeyAllStatus(searchKey);
+    }
+    
     if (!pendingRequests || pendingRequests.length === 0) {
       logger.error(`검색 정보를 찾을 수 없음: ${searchKey}`);
       return;
     }
+    
+    logger.info(`오류 메시지 전송 대상: ${pendingRequests.length}개 요청`);
 
     // 각 대기 중인 사용자에게 전송
     for (const request of pendingRequests) {
@@ -587,8 +596,8 @@ async function sendErrorToAllWaitingUsers(errorMessage, searchKey) {
       }
     }
 
-    // 모든 요청 실패 처리
-    await RankRequest.completeRequests(searchKey, 'failed');
+    // 모든 요청 실패 처리 (모든 상태 포함)
+    await RankRequest.completeAllRequests(searchKey, 'failed');
 
   } catch (error) {
     logger.error('모든 대기 사용자에게 오류 메시지 전송 중 오류:', error);
