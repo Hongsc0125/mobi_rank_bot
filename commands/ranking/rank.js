@@ -375,7 +375,14 @@ async function processQueueAPIInBackground(server, character, searchKey) {
           return;
         } else if (status.status === 'failed') {
           logger.error(`백그라운드 API 검색 실패: ${status.error}`);
-          await sendErrorToAllWaitingUsers(status.error || status.message || '검색이 실패했습니다.', searchKey);
+          // 더 명확한 오류 메시지 제공
+          let errorMsg = '검색이 실패했습니다.';
+          if (status.error && status.error.includes('Unknown search error')) {
+            errorMsg = `캐릭터 '${character}'을(를) 서버 '${server}'에서 찾을 수 없습니다. 캐릭터명과 서버명을 다시 확인해주세요.`;
+          } else {
+            errorMsg = status.error || status.message || '검색이 실패했습니다.';
+          }
+          await sendErrorToAllWaitingUsers(errorMsg, searchKey);
           return;
         } else if (status.status === 'timeout') {
           logger.error(`백그라운드 API 검색 타임아웃: ${status.error}`);
