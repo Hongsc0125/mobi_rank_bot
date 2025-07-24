@@ -613,7 +613,7 @@ async function sendErrorToAllWaitingUsers(errorMessage, searchKey) {
 
 // 랭킹 카드 생성 (기존 UI 로직 분리)
 async function createRankingCard(data) {
-  const cardImage = 'https://harmari.duckdns.org/static/ranking_card2.png';
+  const cardImage = 'https://harmari.duckdns.org/static/ranking_card.png';
   
   // 캐릭터 정보 추출 및 키 매핑
   const name = data.character_name || data.character || '알 수 없음';

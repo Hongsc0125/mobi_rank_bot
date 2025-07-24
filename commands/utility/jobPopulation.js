@@ -47,7 +47,7 @@ module.exports = {
       const totalPopulation = parseInt(response.data.total_population || '0').toLocaleString('ko-KR');
 
       // 제목과 이미지 URL 설정
-      const titleImage = 'https://harmari.duckdns.org/static/population_job2.png';
+      const titleImage = 'https://harmari.duckdns.org/static/population_job.png';
       
       // 직업별 인구 데이터 텍스트 생성
       let jobText = '## 직업별 인구 통계\n\n';
