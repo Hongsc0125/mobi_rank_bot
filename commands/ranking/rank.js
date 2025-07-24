@@ -322,16 +322,27 @@ async function processQueueAPIInBackground(server, character, searchKey) {
       server: server,
       character: character
     }, {
-      timeout: 10000
+      timeout: 30000, // 30초 타임아웃
+      headers: {
+        'Content-Type': 'application/json'
+      }
     });
+
+    // 요청 접수 응답 확인
+    if (!searchResponse.data.success || !searchResponse.data.job_id) {
+      logger.error(`검색 요청 실패: ${searchResponse.data.message || '알 수 없는 오류'}`);
+      await sendErrorToAllWaitingUsers(searchResponse.data.message || '검색 요청에 실패했습니다.', searchKey);
+      return;
+    }
 
     const jobId = searchResponse.data.job_id;
     logger.info(`백그라운드 랭킹 검색 작업 시작됨. Job ID: ${jobId}, 서버: ${server}, 캐릭터: ${character}`);
+    logger.info(`예상 대기 시간: ${searchResponse.data.estimated_wait_time || '알 수 없음'}`);
 
     // 2. 결과 대기 (폴링)
-    const maxWaitTime = 15 * 60 * 1000; // 15분
+    const maxWaitTime = 10 * 60 * 1000; // 10분 (API 타임아웃에 맞춤)
     const startTime = Date.now();
-    let pollInterval = 3000; // 3초로 시작
+    let pollInterval = 2000; // 2초로 시작
 
     while (Date.now() - startTime < maxWaitTime) {
       await new Promise(resolve => setTimeout(resolve, pollInterval));
@@ -345,49 +356,81 @@ async function processQueueAPIInBackground(server, character, searchKey) {
         logger.info(`백그라운드 작업 상태: ${status.status}, Job ID: ${jobId}`);
 
         if (status.status === 'completed') {
-          // API 응답을 기존 형식으로 파싱
-          const data = parseAPIResponse(status.character);
-          if (data) {
-            // 모든 대기 중인 사용자에게 랭킹 카드 전송
-            await sendRankingToAllWaitingUsers(data, searchKey);
+          if (status.success) {
+            // 성공 - API 응답을 기존 형식으로 파싱
+            const data = parseAPIResponse(status.character);
+            if (data) {
+              // 모든 대기 중인 사용자에게 랭킹 카드 전송
+              await sendRankingToAllWaitingUsers(data, searchKey);
+            } else {
+              await sendErrorToAllWaitingUsers('데이터 파싱에 실패했습니다.', searchKey);
+            }
           } else {
-            await sendErrorToAllWaitingUsers('데이터 파싱에 실패했습니다.', searchKey);
+            // 캐릭터를 찾을 수 없음
+            const errorMsg = status.error_code === 'CHARACTER_NOT_FOUND' 
+              ? status.message 
+              : '캐릭터를 찾을 수 없습니다.';
+            await sendErrorToAllWaitingUsers(errorMsg, searchKey);
           }
           return;
         } else if (status.status === 'failed') {
           logger.error(`백그라운드 API 검색 실패: ${status.error}`);
-          await sendErrorToAllWaitingUsers(status.error || '캐릭터를 찾을 수 없습니다.', searchKey);
+          await sendErrorToAllWaitingUsers(status.error || status.message || '검색이 실패했습니다.', searchKey);
+          return;
+        } else if (status.status === 'timeout') {
+          logger.error(`백그라운드 API 검색 타임아웃: ${status.error}`);
+          await sendErrorToAllWaitingUsers('검색 시간이 초과되었습니다. 잠시 후 다시 시도해주세요.', searchKey);
           return;
         }
+        // pending이나 processing 상태면 계속 대기
 
         // 시간이 지날수록 폴링 간격 늘리기
-        if (Date.now() - startTime > 60000) { // 1분 후
+        if (Date.now() - startTime > 30000) { // 30초 후
+          pollInterval = 3000; // 3초
+        }
+        if (Date.now() - startTime > 120000) { // 2분 후
           pollInterval = 5000; // 5초
-        } else if (Date.now() - startTime > 180000) { // 3분 후
-          pollInterval = 10000; // 10초
         }
 
       } catch (pollError) {
+        if (pollError.response?.status === 404) {
+          logger.error(`작업 ID를 찾을 수 없음: ${jobId}`);
+          await sendErrorToAllWaitingUsers('검색 작업을 찾을 수 없습니다.', searchKey);
+          return;
+        }
         logger.error('백그라운드 상태 조회 중 오류:', pollError.message);
         continue;
       }
     }
 
     // 타임아웃
-    logger.error('백그라운드 API 조회 타임아웃');
+    logger.error('백그라운드 API 조회 타임아웃 (10분 초과)');
     await sendErrorToAllWaitingUsers('조회 시간이 초과되었습니다. 잠시 후 다시 시도해주세요.', searchKey);
 
   } catch (error) {
-    logger.error(`백그라운드 API 오류: ${error.message}`);
-    await sendErrorToAllWaitingUsers('랭킹 조회 서비스에 일시적인 문제가 발생했습니다.', searchKey);
+    if (error.response?.status === 403) {
+      logger.error('API 접근 거부 (IP 화이트리스트):', error.message);
+      await sendErrorToAllWaitingUsers('서버 접근이 제한되었습니다. 관리자에게 문의해주세요.', searchKey);
+    } else if (error.response?.status === 400) {
+      logger.error('잘못된 요청:', error.message);
+      await sendErrorToAllWaitingUsers('잘못된 요청입니다. 서버명과 캐릭터명을 확인해주세요.', searchKey);
+    } else {
+      logger.error(`백그라운드 API 오류: ${error.message}`);
+      await sendErrorToAllWaitingUsers('랭킹 조회 서비스에 일시적인 문제가 발생했습니다.', searchKey);
+    }
   }
 }
 
-// API 응답을 기존 형식으로 파싱 (실제 API 구조에 맞게 수정)
+// API 응답을 기존 형식으로 파싱 (새로운 API 스펙에 맞게 수정)
 function parseAPIResponse(apiData) {
-  const rankings = apiData.rankings || {};
+  if (!apiData || !apiData.rankings) {
+    logger.error('API 데이터 또는 rankings 필드가 없습니다:', JSON.stringify(apiData));
+    return null;
+  }
+
+  const rankings = apiData.rankings;
   
-  // 랭킹 데이터 추출 - 실제 API 구조: 직접 객체 형태
+  // 랭킹 데이터 추출 - 새로운 API 스펙 구조
   const combatData = rankings["전투력"] || {};
   const charmData = rankings["매력"] || {};
   const lifeData = rankings["생활력"] || {};
@@ -400,14 +443,14 @@ function parseAPIResponse(apiData) {
   // 클래스명 추출 (전투력 -> 매력 -> 생활력 순서로 우선순위)
   const className = combatData.class || charmData.class || lifeData.class || '알 수 없음';
   
-  // 전체 데이터 구성 (실제 API 형식에 맞추어 정확히 파싱)
+  // 전체 데이터 구성 (새로운 API 스펙에 맞추어 파싱)
   const data = {
-    // 기본 캐릭터 정보
+    // 기본 캐릭터 정보 (새로운 API 스펙)
     character_name: apiData.character,
     server_name: apiData.server,
     class_name: className,
     
-    // 전투력 데이터 처리 (API에서는 이미 포맷된 문자열로 옴)
+    // 전투력 데이터 처리 (새로운 API 스펙에서는 이미 포맷된 문자열로 옴)
     combat_rank: combatData.rank || '순위권 외',
     combat_power: combatData.power || '0',
     combat_change: combatData.change || 0,
