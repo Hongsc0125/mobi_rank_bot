@@ -5,6 +5,9 @@ const axios = require('axios');
 const { sendToChannel, sendToChannelTest } = require('./index');
 require('dotenv').config();
 
+// 데이터베이스 연결 테스트 모듈
+const { testConnection } = require('./db/session');
+
 const { 
   sendDiscordMessage,
   getMessage,
@@ -85,64 +88,92 @@ if (!process.env.SERVER_IP) {
   process.env.SERVER_IP = 'localhost';
 }
 
-// 서버 시작
-const server = app.listen(PORT, () => {
-  console.log(`[웹 서버] Express 서버가 포트 ${PORT}에서 시작되었습니다 (${new Date().toLocaleString('ko-KR')})`);
-  console.log(`[웹 서버] 이미지 접근 URL: http://${process.env.SERVER_IP}:${PORT}/images/example.png`);
-}).on('error', (err) => {
-  if (err.code === 'EADDRINUSE') {
-    console.error(`[웹 서버] 오류: 포트 ${PORT}가 이미 사용 중입니다. 다른 포트를 사용하거나 기존 프로세스를 종료하세요.`);
-  } else {
-    console.error(`[웹 서버] 오류: 서버 시작 실패: ${err.message}`);
-  }
-  process.exit(1);
-});
-
-// SIGINT(Ctrl+C) 처리
-process.on('SIGINT', () => {
-  console.log('[웹 서버] SIGINT 신호를 받았습니다. 서버를 종료합니다...');
-  
-  // 데이터베이스 연결 종료 시도
+// 데이터베이스 연결 테스트 후 서버 시작
+async function startServer() {
   try {
-    const { sequelize, rankSequelize, kadanSequelize } = require('./db/session');
-    console.log('[웹 서버] 데이터베이스 연결 종료 중...');
-    
-    Promise.all([
-      sequelize.close(),
-      rankSequelize.close(),
-      kadanSequelize.close()
-    ])
-    .then(() => {
-      console.log('[웹 서버] 모든 데이터베이스 연결이 종료되었습니다.');
-    })
-    .catch(err => {
-      console.error('[웹 서버] 데이터베이스 연결 종료 오류:', err);
-    })
-    .finally(() => {
-      // 서버 종료
-      server.close(() => {
-        console.log('[웹 서버] HTTP 서버가 정상적으로 종료되었습니다.');
-        
-        // Discord 클라이언트 종료
-        if (global.discordClient) {
-          console.log('[웹 서버] Discord 클라이언트 연결 종료 중...');
-          global.discordClient.destroy()
-            .then(() => console.log('[웹 서버] Discord 클라이언트가 정상적으로 종료되었습니다.'))
-            .catch(err => console.error('[웹 서버] Discord 클라이언트 종료 오류:', err))
-            .finally(() => {
-              console.log('[웹 서버] 프로세스를 종료합니다.');
-              setTimeout(() => process.exit(0), 1000); // 1초 후 강제 종료
-            });
-        } else {
-          console.log('[웹 서버] 프로세스를 종료합니다.');
-          setTimeout(() => process.exit(0), 1000); // 1초 후 강제 종료
-        }
-      });
+    console.log(`[웹 서버] 데이터베이스 연결 테스트 시작... (${new Date().toLocaleString('ko-KR')})`);
+
+    const isDbConnected = await testConnection();
+    if (!isDbConnected) {
+      console.error('[웹 서버] ❌ 데이터베이스 연결에 실패했습니다. 서버를 시작할 수 없습니다.');
+      console.error('[웹 서버] 환경변수 확인:');
+      console.error(`[웹 서버] - DATABASE_URL: ${process.env.DATABASE_URL ? '설정됨' : '없음'}`);
+      console.error(`[웹 서버] - DB_USER: ${process.env.DB_USER ? '설정됨' : '없음'}`);
+      console.error(`[웹 서버] - DB_PW: ${process.env.DB_PW ? '설정됨' : '없음'}`);
+      process.exit(1);
+    }
+
+    console.log('[웹 서버] ✅ 모든 데이터베이스 연결이 성공했습니다.');
+
+    // 서버 시작
+    const server = app.listen(PORT, () => {
+      console.log(`[웹 서버] Express 서버가 포트 ${PORT}에서 시작되었습니다 (${new Date().toLocaleString('ko-KR')})`);
+      console.log(`[웹 서버] 이미지 접근 URL: http://${process.env.SERVER_IP}:${PORT}/images/example.png`);
+    }).on('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        console.error(`[웹 서버] 오류: 포트 ${PORT}가 이미 사용 중입니다. 다른 포트를 사용하거나 기존 프로세스를 종료하세요.`);
+      } else {
+        console.error(`[웹 서버] 오류: 서버 시작 실패: ${err.message}`);
+      }
+      process.exit(1);
     });
+
+    return server;
+
   } catch (error) {
-    console.error('[웹 서버] 종료 중 오류 발생:', error);
+    console.error(`[웹 서버] 서버 시작 중 오류: ${error.message}`);
     process.exit(1);
   }
+}
+
+// 서버 시작
+startServer().then(server => {
+  // SIGINT(Ctrl+C) 처리
+  process.on('SIGINT', () => {
+    console.log('[웹 서버] SIGINT 신호를 받았습니다. 서버를 종료합니다...');
+
+    // 데이터베이스 연결 종료 시도
+    try {
+      const { sequelize, rankSequelize, kadanSequelize } = require('./db/session');
+      console.log('[웹 서버] 데이터베이스 연결 종료 중...');
+
+      Promise.all([
+        sequelize.close(),
+        rankSequelize.close(),
+        kadanSequelize.close()
+      ])
+      .then(() => {
+        console.log('[웹 서버] 모든 데이터베이스 연결이 종료되었습니다.');
+      })
+      .catch(err => {
+        console.error('[웹 서버] 데이터베이스 연결 종료 오류:', err);
+      })
+      .finally(() => {
+        // 서버 종료
+        server.close(() => {
+          console.log('[웹 서버] HTTP 서버가 정상적으로 종료되었습니다.');
+
+          // Discord 클라이언트 종료
+          if (global.discordClient) {
+            console.log('[웹 서버] Discord 클라이언트 연결 종료 중...');
+            global.discordClient.destroy()
+              .then(() => console.log('[웹 서버] Discord 클라이언트가 정상적으로 종료되었습니다.'))
+              .catch(err => console.error('[웹 서버] Discord 클라이언트 종료 오류:', err))
+              .finally(() => {
+                console.log('[웹 서버] 프로세스를 종료합니다.');
+                setTimeout(() => process.exit(0), 1000); // 1초 후 강제 종료
+              });
+          } else {
+            console.log('[웹 서버] 프로세스를 종료합니다.');
+            setTimeout(() => process.exit(0), 1000); // 1초 후 강제 종료
+          }
+        });
+      });
+    } catch (error) {
+      console.error('[웹 서버] 종료 중 오류 발생:', error);
+      process.exit(1);
+    }
+  });
 });
 
 process.on('SIGTERM', () => {

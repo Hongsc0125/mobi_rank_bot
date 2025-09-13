@@ -7,6 +7,9 @@ const { sendDiscordMessage, sendSimpleEmbedMessage } = require('./utils/post_pat
 const fs = require('fs');
 const path = require('path');
 
+// 데이터베이스 연결 테스트 모듈
+const { testConnection } = require('./db/session');
+
 // 클라이언트 인스턴스 생성
 const client = new Client({
   intents: [
@@ -113,18 +116,37 @@ client.on(Events.InteractionCreate, async interaction => {
   }
 });
 
-// 봇 로그인 시도 기록
-console.log(`봇 로그인 시도 중... (${new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })})`);
+// 데이터베이스 연결 테스트 후 봇 시작
+async function startBot() {
+  try {
+    console.log(`데이터베이스 연결 테스트 시작... (${new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })})`);
 
-// 봇 로그인
-client.login(process.env.DISCORD_TOKEN)
-  .then(() => {
+    const isDbConnected = await testConnection();
+    if (!isDbConnected) {
+      console.error('❌ 데이터베이스 연결에 실패했습니다. 봇을 시작할 수 없습니다.');
+      console.error('환경변수 확인:');
+      console.error(`- DATABASE_URL: ${process.env.DATABASE_URL ? '설정됨' : '없음'}`);
+      console.error(`- DB_USER: ${process.env.DB_USER ? '설정됨' : '없음'}`);
+      console.error(`- DB_PW: ${process.env.DB_PW ? '설정됨' : '없음'}`);
+      process.exit(1);
+    }
+
+    console.log('✅ 모든 데이터베이스 연결이 성공했습니다.');
+    console.log(`봇 로그인 시도 중... (${new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })})`);
+
+    // 봇 로그인
+    await client.login(process.env.DISCORD_TOKEN);
     console.log(`봇 로그인 성공! (${new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })})`);
-  })
-  .catch(error => {
-    console.error(`봇 로그인 오류: ${error.message}`);
-    console.log(`환경변수 확인: DISCORD_TOKEN ${process.env.DISCORD_TOKEN ? '존재함' : '없음'}`);
-  });
+
+  } catch (error) {
+    console.error(`봇 시작 중 오류: ${error.message}`);
+    console.error(`환경변수 확인: DISCORD_TOKEN ${process.env.DISCORD_TOKEN ? '존재함' : '없음'}`);
+    process.exit(1);
+  }
+}
+
+// 봇 시작
+startBot();
 
 // 에러 핸들링
 process.on('unhandledRejection', error => {
