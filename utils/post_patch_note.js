@@ -491,9 +491,11 @@ try {
 // HTML 테이블을 이미지로 변환하는 함수
 async function htmlTableToImageBuffer(html) {
   try {
+    logger.info(`[패치노트] 테이블 이미지 변환 시작 - HTML 길이: ${html.length}`);
+
     // HTML 구조 전처리 - 빈 테이블 셀 처리 및 테이블 구조 보정
     const processedHtml = html.replace(/<td[^>]*>\s*<\/td>/g, '<td>&nbsp;</td>');
-    
+
     // 기본 스타일이 적용된 HTML 템플릿 설정
     const htmlTemplate = `
     <!DOCTYPE html>
@@ -516,53 +518,87 @@ async function htmlTableToImageBuffer(html) {
     </body>
     </html>
 `;
-    
-    logger.info(`[패치노트] HTML 테이블 변환 시작`);
+
+    logger.info(`[패치노트] HTML 템플릿 생성 완료 - 최종 길이: ${htmlTemplate.length}`);
+    logger.info(`[패치노트] 사용할 API URL: ${settings.RANK_API_URL}`);
     
     // API 서버에 HTML 전송하여 이미지 URL 받기
     const rankUrl = settings.RANK_API_URL;
-    
+
+    if (!rankUrl) {
+      throw new Error('RANK_API_URL이 설정되지 않았습니다.');
+    }
+
+    logger.info(`[패치노트] API 요청 시작: ${rankUrl}/html_to_image`);
+
     // HTML을 API로 전송하여 이미지 URL 받기
     const response = await axios.post(`${rankUrl}/html_to_image`, {
       html: htmlTemplate
     }, {
       timeout: 30000
     });
-    
+
+    logger.info(`[패치노트] API 응답 수신: status=${response.status}, success=${response.data?.success}`);
+
     if (!response.data || !response.data.success) {
-      throw new Error('이미지 변환 API 응답이 유효하지 않습니다.');
+      logger.error(`[패치노트] API 응답 오류: ${JSON.stringify(response.data)}`);
+      throw new Error(`이미지 변환 API 응답이 유효하지 않습니다: ${response.data?.message || '알 수 없는 오류'}`);
     }
-    
+
     // API에서 반환한 이미지 URL
     const apiImageUrl = response.data.imageUrl;
     logger.info(`[패치노트] API에서 반환한 이미지 URL: ${apiImageUrl}`);
-    
+
+    if (!apiImageUrl) {
+      throw new Error('API에서 이미지 URL을 반환하지 않았습니다.');
+    }
+
+    const fullImageUrl = rankUrl + apiImageUrl;
+    logger.info(`[패치노트] 이미지 다운로드 시작: ${fullImageUrl}`);
+
     // 1. 이미지 다운로드
-    const imageResponse = await axios.get(rankUrl + apiImageUrl, { 
+    const imageResponse = await axios.get(fullImageUrl, {
       responseType: 'arraybuffer',
       timeout: 10000
     });
-    
+
+    logger.info(`[패치노트] 이미지 다운로드 완료: 크기=${imageResponse.data.byteLength} bytes`);
+
     // 2. 이미지 처리 - 고유 파일명 생성
     const imageBuffer = Buffer.from(imageResponse.data);
     const uniqueId = Date.now() + '_' + Math.floor(Math.random() * 10000);
     const fileName = `table_${uniqueId}.png`;
-    
+
+    logger.info(`[패치노트] 생성할 파일명: ${fileName}`);
+
     // 3. 이미지를 images/patch_note 폴더에 저장
     const imagesDir = path.join(__dirname, '../images/patch_note');
     if (!fs.existsSync(imagesDir)) {
       logger.info(`[패치노트] patch_note 디렉토리 생성: ${imagesDir}`);
       fs.mkdirSync(imagesDir, { recursive: true });
+    } else {
+      logger.info(`[패치노트] patch_note 디렉토리 이미 존재: ${imagesDir}`);
     }
-    
+
     const filePath = path.join(imagesDir, fileName);
-    fs.writeFileSync(filePath, imageBuffer);
-    logger.info(`[패치노트] 테이블 이미지 저장 성공: ${filePath}`);
-    
+    logger.info(`[패치노트] 파일 저장 경로: ${filePath}`);
+
+    try {
+      fs.writeFileSync(filePath, imageBuffer);
+      logger.info(`[패치노트] 테이블 이미지 저장 성공: ${filePath} (크기: ${imageBuffer.length} bytes)`);
+
+      // 파일이 실제로 저장되었는지 확인
+      const stats = fs.statSync(filePath);
+      logger.info(`[패치노트] 저장된 파일 검증: 존재=${fs.existsSync(filePath)}, 크기=${stats.size} bytes`);
+    } catch (writeError) {
+      logger.error(`[패치노트] 파일 저장 실패: ${writeError.message}`);
+      throw writeError;
+    }
+
     // 4. 외부 접근용 URL 생성
     const publicImageUrl = `http://${process.env.SERVER_IP}:${process.env.WEB_PORT}/images/patch_note/${fileName}`;
     logger.info(`[패치노트] 테이블 이미지 생성 성공: ${publicImageUrl}`);
-    
+
     return publicImageUrl;
   } catch (error) {
     logger.error(`[패치노트] 테이블 이미지 변환 오류: ${error.message}`);
@@ -580,15 +616,19 @@ async function htmlTableToImageBuffer(html) {
 
 // puppeteer를 사용한 백업 방식
 async function puppeteerBackupMethod(html) {
+  logger.info(`[패치노트] Puppeteer 백업 방식 시작 - HTML 길이: ${html.length}`);
+
   // HTML 구조 전처리 - 빈 테이블 셀 처리 및 테이블 구조 보정
   const processedHtml = html.replace(/<td[^>]*>\s*<\/td>/g, '<td>&nbsp;</td>');
-  
+
+  logger.info(`[패치노트] Puppeteer 브라우저 실행 시작`);
   const browser = await puppeteer.launch({
     headless: 'new',
     args: ['--no-sandbox', '--disable-setuid-sandbox']
   });
-  
+
   const page = await browser.newPage();
+  logger.info(`[패치노트] Puppeteer 페이지 생성 완료`);
   
   // 기본 스타일이 적용된 HTML 템플릿 설정
   const htmlTemplate = `

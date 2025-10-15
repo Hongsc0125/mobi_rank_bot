@@ -1,4 +1,5 @@
 const express = require('express');
+const https = require('https');
 const path = require('path');
 const fs = require('fs');
 const axios = require('axios');
@@ -105,11 +106,35 @@ async function startServer() {
 
     console.log('[웹 서버] ✅ 모든 데이터베이스 연결이 성공했습니다.');
 
-    // 서버 시작
-    const server = app.listen(PORT, () => {
-      console.log(`[웹 서버] Express 서버가 포트 ${PORT}에서 시작되었습니다 (${new Date().toLocaleString('ko-KR')})`);
-      console.log(`[웹 서버] 이미지 접근 URL: http://${process.env.SERVER_IP}:${PORT}/images/example.png`);
-    }).on('error', (err) => {
+    // HTTPS 설정
+    let server;
+    if (process.env.USE_HTTPS === 'true' && process.env.SSL_KEY && process.env.SSL_CERT) {
+      try {
+        const httpsOptions = {
+          key: fs.readFileSync(process.env.SSL_KEY),
+          cert: fs.readFileSync(process.env.SSL_CERT)
+        };
+
+        server = https.createServer(httpsOptions, app).listen(PORT, () => {
+          console.log(`[웹 서버] HTTPS 서버가 포트 ${PORT}에서 시작되었습니다 (${new Date().toLocaleString('ko-KR')})`);
+          console.log(`[웹 서버] 이미지 접근 URL: https://${process.env.SERVER_IP}:${PORT}/images/example.png`);
+        });
+      } catch (sslError) {
+        console.error(`[웹 서버] SSL 인증서 로드 실패: ${sslError.message}`);
+        console.log(`[웹 서버] HTTP 모드로 폴백합니다.`);
+        server = app.listen(PORT, () => {
+          console.log(`[웹 서버] HTTP 서버가 포트 ${PORT}에서 시작되었습니다 (${new Date().toLocaleString('ko-KR')})`);
+          console.log(`[웹 서버] 이미지 접근 URL: http://${process.env.SERVER_IP}:${PORT}/images/example.png`);
+        });
+      }
+    } else {
+      server = app.listen(PORT, () => {
+        console.log(`[웹 서버] HTTP 서버가 포트 ${PORT}에서 시작되었습니다 (${new Date().toLocaleString('ko-KR')})`);
+        console.log(`[웹 서버] 이미지 접근 URL: http://${process.env.SERVER_IP}:${PORT}/images/example.png`);
+      });
+    }
+
+    server.on('error', (err) => {
       if (err.code === 'EADDRINUSE') {
         console.error(`[웹 서버] 오류: 포트 ${PORT}가 이미 사용 중입니다. 다른 포트를 사용하거나 기존 프로세스를 종료하세요.`);
       } else {
