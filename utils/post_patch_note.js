@@ -182,7 +182,7 @@ try {
   const query = `
     SELECT title, post_date, contents_json, scraped_at, id
     FROM patch_note_data
-    ORDER BY post_date
+    ORDER BY post_date ASC
   `;
   const results = await kadanSequelize.query(query, {
     type: Sequelize.QueryTypes.SELECT
