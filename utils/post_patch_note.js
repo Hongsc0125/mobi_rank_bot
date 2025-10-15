@@ -47,6 +47,11 @@ try {
   if (!patchDataList || patchDataList.length === 0) {
     throw new Error('패치 노트 데이터를 가져올 수 없습니다.');
   }
+
+  // Discord 포럼에서는 새로 생성된 스레드가 맨 위로 올라가므로
+  // 최신 것부터 생성해야 결과적으로 과거→최신 순서로 보임
+  const reversedPatchDataList = [...patchDataList].reverse();
+  logger.info(`[패치노트] 총 ${patchDataList.length}개 패치노트를 역순으로 처리합니다.`);
   
   const threadIds = [];
   
@@ -82,8 +87,8 @@ try {
         logger.warn(`[패치노트] 기존 쓰레드 가져오기 실패: ${e.message}`);
       }
       
-      // 각 패치노트에 대해 처리
-      for (const patchData of patchDataList) {
+      // 각 패치노트에 대해 처리 (역순으로)
+      for (const patchData of reversedPatchDataList) {
         const title = patchData.title || `패치노트 ${new Date().toLocaleString('ko-KR')}`;
         const post_date = patchData.post_date || new Date().toLocaleString('ko-KR');
         
