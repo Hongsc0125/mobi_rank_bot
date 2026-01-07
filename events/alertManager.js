@@ -186,8 +186,8 @@ module.exports = {
                                 
                                 // 각 알림 유형별로 개별 처리
                                 for (const [alertType, alertsOfType] of Object.entries(alertTypes)) {
-                                    // 이미 처리된 알림 건너뛰기
-                                    if (isWarning && this.wasAlertSent(alertsOfType[0], userId)) {
+                                    // 이미 처리된 알림 건너뛰기 (정시/경고 알림 모두)
+                                    if (this.wasAlertSent(alertsOfType[0], userId)) {
                                         continue;
                                     }
                                     
@@ -238,13 +238,11 @@ module.exports = {
                                         }
                                     }
                                     
-                                    // 알림 발송 기록
-                                    if (!isWarning) {
-                                        for (const alert of alertsOfType) {
-                                            const alertKey = `${alert.alert_id}-${userId}`;
-                                            const today = DateTime.now().setZone(settings.TIMEZONE).toISODate();
-                                            this.lastSentAlerts.set(alertKey, today);
-                                        }
+                                    // 알림 발송 기록 (정시/경고 알림 모두 기록)
+                                    for (const alert of alertsOfType) {
+                                        const alertKey = `${alert.alert_id}-${userId}`;
+                                        const today = DateTime.now().setZone(settings.TIMEZONE).toISODate();
+                                        this.lastSentAlerts.set(alertKey, today);
                                     }
                                 }
                             } catch (e) {
