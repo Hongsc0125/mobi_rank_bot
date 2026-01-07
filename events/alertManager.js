@@ -38,6 +38,7 @@ module.exports = {
             client.alertManager = {
                 lastSentAlerts: new Map(),
                 checkInterval: null,
+                startTimeout: null,
                 
                 /**
                  * 관리자용 테스트 알림 전송 함수
@@ -294,8 +295,14 @@ module.exports = {
                  * 알림 시작 함수
                  */
                 start() {
+                    // 기존 타이머 정리
+                    if (this.startTimeout) {
+                        clearTimeout(this.startTimeout);
+                        this.startTimeout = null;
+                    }
                     if (this.checkInterval) {
                         clearInterval(this.checkInterval);
+                        this.checkInterval = null;
                     }
                     
                     // 정각에 정확하게 알림을 보내기 위해 다음 분의 시작(00초)까지 대기 후 시작
@@ -309,12 +316,12 @@ module.exports = {
                     // logger.info(`알림 관리자 초기화 중... ${Math.floor(delay/1000)}.${Math.floor(delay%1000)}초 후 첫 분 시작에 맞춰 실행됩니다.`);
                     
                     // 처음에는 분의 정확한 시작 시점에 맞춰 실행
-                    setTimeout(() => {
+                    this.startTimeout = setTimeout(() => {
                         logger.info(`알림 관리자가 시작되었습니다. (${DateTime.now().setZone(settings.TIMEZONE).toFormat('HH:mm:ss.SSS')})`);
-                        
+
                         // 첫 부분 실행
                         this.checkAlerts();
-                        
+
                         // 이후 정확히 1분마다 실행 (매 분 00초에 실행)
                         this.checkInterval = setInterval(() => {
                             // logger.info(`정각 알림 확인 시작 (${DateTime.now().setZone(settings.TIMEZONE).toFormat('HH:mm:ss.SSS')})`);
@@ -327,6 +334,10 @@ module.exports = {
                  * 알림 정지 함수
                  */
                 stop() {
+                    if (this.startTimeout) {
+                        clearTimeout(this.startTimeout);
+                        this.startTimeout = null;
+                    }
                     if (this.checkInterval) {
                         clearInterval(this.checkInterval);
                         this.checkInterval = null;
