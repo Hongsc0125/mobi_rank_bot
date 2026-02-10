@@ -3,17 +3,28 @@ const https = require('https');
 const path = require('path');
 const fs = require('fs');
 const axios = require('axios');
-const { sendToChannel, sendToChannelTest } = require('./index');
+const { client } = require('./client'); // 공유 클라이언트 인스턴스만 import
 require('dotenv').config();
 
 // 데이터베이스 연결 테스트 모듈
 const { testConnection } = require('./db/session');
 
-const { 
+const {
   sendDiscordMessage,
   getMessage,
-  buildPatchNoteComponents 
+  buildPatchNoteComponents,
+  sendSimpleEmbedMessage
 } = require('./utils/post_patch_note');
+
+// 패치노트 전송 함수 (index.js에서 분리)
+async function sendToChannel() {
+  return await sendDiscordMessage(client);
+}
+
+// 테스트용 임베드 전송 함수 (index.js에서 분리)
+async function sendToChannelTest() {
+  return await sendSimpleEmbedMessage(client);
+}
 
 const app = express();
 const PORT = process.env.WEB_PORT || 3000;
@@ -178,20 +189,9 @@ startServer().then(server => {
         server.close(() => {
           console.log('[웹 서버] HTTP 서버가 정상적으로 종료되었습니다.');
 
-          // Discord 클라이언트 종료
-          if (global.discordClient) {
-            console.log('[웹 서버] Discord 클라이언트 연결 종료 중...');
-            global.discordClient.destroy()
-              .then(() => console.log('[웹 서버] Discord 클라이언트가 정상적으로 종료되었습니다.'))
-              .catch(err => console.error('[웹 서버] Discord 클라이언트 종료 오류:', err))
-              .finally(() => {
-                console.log('[웹 서버] 프로세스를 종료합니다.');
-                setTimeout(() => process.exit(0), 1000); // 1초 후 강제 종료
-              });
-          } else {
-            console.log('[웹 서버] 프로세스를 종료합니다.');
-            setTimeout(() => process.exit(0), 1000); // 1초 후 강제 종료
-          }
+          // Discord 클라이언트는 index.js 프로세스에서 관리하므로 여기서는 종료하지 않음
+          console.log('[웹 서버] 프로세스를 종료합니다.');
+          setTimeout(() => process.exit(0), 1000); // 1초 후 강제 종료
         });
       });
     } catch (error) {

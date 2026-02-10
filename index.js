@@ -2,7 +2,8 @@
 require('dotenv').config();
 
 // Discord.js 관련 모듈 임포트
-const { Client, GatewayIntentBits, Collection, Events } = require('discord.js');
+const { Events } = require('discord.js');
+const { client } = require('./client'); // 공유 클라이언트 인스턴스 import
 const { sendDiscordMessage, sendSimpleEmbedMessage } = require('./utils/post_patch_note');
 const fs = require('fs');
 const path = require('path');
@@ -10,20 +11,8 @@ const path = require('path');
 // 데이터베이스 연결 테스트 모듈
 const { testConnection } = require('./db/session');
 
-// 클라이언트 인스턴스 생성
-const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent
-  ]
-});
-
 // DB 초기화
 const { initializeRankRequests } = require('./db/init_rank_requests');
-
-// 명령어 컬렉션 설정
-client.commands = new Collection();
 
 // 준비 이벤트 핸들러
 client.on(Events.ClientReady, async () => {

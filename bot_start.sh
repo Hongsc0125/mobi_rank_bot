@@ -1,5 +1,11 @@
 #!/bin/bash
 
+cd "$(dirname "$0")"
+
+# nvm Node.js 경로 설정
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
 # 로그 디렉토리 생성
 mkdir -p logs
 
