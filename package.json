@@ -32,5 +32,8 @@
   },
   "devDependencies": {
     "nodemon": "^3.0.2"
+  },
+  "overrides": {
+    "undici": "6.23.0"
   }
 }
